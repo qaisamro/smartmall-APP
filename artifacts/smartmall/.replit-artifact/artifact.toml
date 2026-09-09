@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "SmartMall"
+description = "The existing SmartMall shopping platform for customers, administrators, owners, delivery staff, and order tracking, preserved with its current design and behavior."
+version = "1.0.0"
+id = "artifacts/smartmall"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22422
+
+[services.development]
+run = "pnpm --filter @workspace/smartmall run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/smartmall", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/smartmall/dist"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22422"
+BASE_PATH = "/"

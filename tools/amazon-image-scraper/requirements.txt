@@ -1,0 +1,14 @@
+undetected-chromedriver
+playwright
+selenium
+webdriver-manager
+openpyxl
+pandas
+requests
+tqdm
+colorama
+Pillow
+lxml
+beautifulsoup4
+opencv-python
+numpy

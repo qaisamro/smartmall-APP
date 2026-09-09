@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>SmartMall | قريباً جداً</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+  /* =========================================================
+     Design tokens — Souq-at-night: deep indigo-navy ground,
+     warm lantern gold as the single hero accent, cool violet
+     as a quiet second voice. Everything fluid via clamp(),
+     so the page scales continuously instead of jumping
+     between disconnected breakpoint layouts.
+     ========================================================= */
+  :root{
+    --bg:            #0a0c16;
+    --bg-2:          #10132a;
+    --surface:       rgba(245, 243, 238, 0.035);
+    --surface-line:  rgba(245, 243, 238, 0.08);
+    --gold:          #f2b632;
+    --gold-soft:     #f7d27a;
+    --violet:        #7c6cf0;
+    --ink:           #f5f3ee;
+    --ink-muted:     rgba(245, 243, 238, 0.68);
+    --ink-faint:     rgba(245, 243, 238, 0.48);
+    --ink-ghost:     rgba(245, 243, 238, 0.38);
+
+    /* Fluid type scale — one system, every viewport */
+    --fs-eyebrow: clamp(0.62rem, 0.5rem + 0.5vw, 0.85rem);
+    --fs-title:   clamp(1.7rem, 1.05rem + 3.6vw, 3.6rem);
+    --fs-desc:    clamp(0.78rem, 0.66rem + 0.55vw, 1rem);
+    --fs-stat:    clamp(1.15rem, 0.85rem + 1.3vw, 2.1rem);
+    --fs-label:   clamp(0.5rem, 0.42rem + 0.3vw, 0.68rem);
+    --fs-feature: clamp(0.55rem, 0.42rem + 0.55vw, 0.8rem);
+    --fs-cta:     clamp(0.75rem, 0.65rem + 0.4vw, 0.95rem);
+    --fs-fine:    clamp(0.6rem, 0.53rem + 0.25vw, 0.75rem);
+
+    --space-lg:  clamp(1.1rem, 0.7rem + 2vw, 2.4rem);
+    --space-md:  clamp(0.7rem, 0.5rem + 1vw, 1.3rem);
+    --space-sm:  clamp(0.4rem, 0.3rem + 0.5vw, 0.75rem);
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  html{ font-size:16px; }
+
+  body{
+    font-family:'Tajawal','Cairo',sans-serif;
+    background:
+      radial-gradient(ellipse 90% 60% at 50% -10%, rgba(124,108,240,0.16), transparent 60%),
+      radial-gradient(ellipse 70% 50% at 100% 110%, rgba(242,182,50,0.08), transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    min-height:100svh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    overflow-x:hidden;
+    padding: max(1rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
+  }
+
+  /* ===== Mashrabiya lattice — the signature element =====
+     A quiet geometric screen (nod to traditional Arab window
+     lattices, the "shop window" of a souq at night) breathing
+     slowly behind the card, instead of generic blurred orbs. */
+  .lattice{
+    position:fixed; inset:0; z-index:0;
+    background-image:
+      repeating-linear-gradient(45deg, rgba(242,182,50,0.05) 0 1px, transparent 1px 42px),
+      repeating-linear-gradient(-45deg, rgba(124,108,240,0.05) 0 1px, transparent 1px 42px);
+    -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 45%, #000 0%, transparent 72%);
+            mask-image: radial-gradient(ellipse 75% 65% at 50% 45%, #000 0%, transparent 72%);
+    animation: latticeBreathe 10s ease-in-out infinite;
+  }
+  @keyframes latticeBreathe{
+    0%,100%{ opacity:0.7; }
+    50%{ opacity:1; }
+  }
+
+  .glow{
+    position:fixed; z-index:0; pointer-events:none; border-radius:50%;
+    filter: blur(70px); will-change:transform;
+  }
+  .glow-gold{
+    width:min(46vw,480px); height:min(46vw,480px);
+    background:radial-gradient(circle, rgba(242,182,50,0.10), transparent 70%);
+    top:-10%; inset-inline-end:-12%;
+  }
+  .glow-violet{
+    width:min(40vw,420px); height:min(40vw,420px);
+    background:radial-gradient(circle, rgba(124,108,240,0.10), transparent 70%);
+    bottom:-14%; inset-inline-start:-12%;
+  }
+
+  /* ===== Card ===== */
+  .card{
+    position:relative; z-index:2;
+    width:100%;
+    max-width:640px;
+    margin-inline:auto;
+    padding: var(--space-lg) clamp(1rem, 4vw, 2.2rem);
+    border-radius:24px;
+    background:var(--surface);
+    border:1px solid var(--surface-line);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    display:flex; flex-direction:column; align-items:center;
+    text-align:center;
+    gap: var(--space-md);
+  }
+
+  /* corner brackets — echoes a display window's frame */
+  .card::before, .card::after{
+    content:''; position:absolute; width:22px; height:22px;
+    border:1.5px solid var(--gold); opacity:0.55;
+  }
+  .card::before{ top:-1px; inset-inline-start:-1px; border-inline-end:none; border-bottom:none; border-radius:24px 0 0 0; }
+  .card::after{ bottom:-1px; inset-inline-end:-1px; border-inline-start:none; border-top:none; border-radius:0 0 24px 0; }
+
+  /* ===== Logo ===== */
+  .logo{ display:inline-flex; align-items:center; gap:0.6rem; }
+  .logo-mark{
+    width:clamp(34px,4.5vw,48px); height:clamp(34px,4.5vw,48px);
+    border-radius:12px;
+    background:linear-gradient(135deg,var(--gold),#c98a10);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Cairo',sans-serif; font-weight:900;
+    font-size:clamp(0.85rem,0.6rem+1vw,1.3rem);
+    color:#151007;
+    box-shadow:0 6px 20px rgba(242,182,50,0.25);
+  }
+  .logo-word{
+    font-family:'Cairo',sans-serif; font-weight:800;
+    font-size:clamp(1.05rem,0.85rem+1vw,1.5rem);
+    letter-spacing:0.2px;
+  }
+
+  /* ===== Eyebrow badge ===== */
+  .badge{
+    display:inline-flex; align-items:center; gap:0.5rem;
+    padding:0.4em 1em;
+    border-radius:100px;
+    background:rgba(242,182,50,0.08);
+    border:1px solid rgba(242,182,50,0.22);
+    color:var(--gold-soft);
+    font-size:var(--fs-eyebrow); font-weight:700;
+  }
+  .badge-dot{
+    width:6px; height:6px; border-radius:50%; background:var(--gold);
+    box-shadow:0 0 8px rgba(242,182,50,0.7);
+    animation:pulseDot 1.4s ease-in-out infinite;
+  }
+  @keyframes pulseDot{ 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.3;transform:scale(0.75);} }
+
+  /* ===== Title ===== */
+  h1.title{
+    font-family:'Cairo',sans-serif; font-weight:900;
+    font-size:var(--fs-title); line-height:1.18;
+  }
+  .title .lead{ display:block; color:rgba(245,243,238,0.92); }
+  .title .accent{
+    display:block;
+    background:linear-gradient(100deg,var(--gold-soft),var(--gold),var(--violet));
+    background-size:220% 100%;
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    animation:sheen 6s ease-in-out infinite;
+  }
+  @keyframes sheen{ 0%,100%{background-position:0% 50%;} 50%{background-position:100% 50%;} }
+
+  /* ===== Description ===== */
+  p.desc{
+    font-size:var(--fs-desc);
+    color:var(--ink-muted);
+    line-height:1.85;
+    max-width:34rem;
+  }
+  p.desc strong{ color:var(--ink); font-weight:700; }
+  p.desc .quote{ color:var(--ink-faint); font-style:italic; display:inline-block; margin-top:0.35em; }
+
+  /* ===== Stats + progress ring row ===== */
+  .stats{
+    display:flex; align-items:center; justify-content:center;
+    gap:clamp(0.8rem,2vw,2rem);
+    flex-wrap:wrap;
+    width:100%;
+  }
+  .stat{ text-align:center; min-width:64px; }
+  .stat .num{
+    font-family:'Cairo',sans-serif; font-weight:800;
+    font-size:var(--fs-stat); line-height:1;
+    color:var(--gold-soft);
+  }
+  .stat .lbl{ font-size:var(--fs-label); color:var(--ink-faint); font-weight:600; margin-top:0.3em; }
+
+  .sep{ width:1px; align-self:stretch; min-height:2rem; background:var(--surface-line); }
+
+  .ring{ position:relative; width:clamp(64px,10vw,104px); aspect-ratio:1; flex-shrink:0; }
+  .ring svg{ width:100%; height:100%; transform:rotate(-90deg); }
+  .ring-track{ fill:none; stroke:var(--surface-line); stroke-width:6; }
+  .ring-fill{
+    fill:none; stroke:url(#ringGrad); stroke-width:6; stroke-linecap:round;
+    stroke-dasharray:339.29; stroke-dashoffset:339.29;
+    animation:ringFill 1.6s 0.2s cubic-bezier(.2,.8,.2,1) forwards;
+  }
+  @keyframes ringFill{ to{ stroke-dashoffset:67.86; } }
+  .ring-label{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .ring-label .pct{ font-family:'Cairo',sans-serif; font-weight:800; font-size:clamp(0.95rem,0.7rem+1vw,1.5rem); color:var(--ink); }
+  .ring-label .pctl{ font-size:calc(var(--fs-label) * 0.9); color:var(--ink-faint); }
+
+  /* ===== Features ===== */
+  .features{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(96px,1fr));
+    gap:clamp(0.4rem,1vw,0.7rem);
+    width:100%;
+  }
+  .feature{
+    padding:clamp(0.5rem,1.5vh,0.85rem) clamp(0.3rem,1vw,0.6rem);
+    border-radius:12px;
+    background:rgba(245,243,238,0.02);
+    border:1px solid var(--surface-line);
+    font-size:var(--fs-feature); font-weight:600;
+    color:var(--ink-faint);
+    transition:border-color .25s ease, color .25s ease, transform .25s ease;
+  }
+  @media(hover:hover){
+    .feature:hover{ border-color:rgba(242,182,50,0.35); color:var(--ink); transform:translateY(-2px); }
+  }
+  .feature:active{ transform:scale(0.96); }
+
+  /* ===== CTA ===== */
+  .cta{
+    display:inline-flex; align-items:center; gap:0.5em;
+    padding:0.85em 2em;
+    border-radius:100px;
+    background:linear-gradient(120deg,var(--gold),#d99a17);
+    color:#171207;
+    font-weight:800; font-size:var(--fs-cta);
+    text-decoration:none;
+    box-shadow:0 10px 26px rgba(242,182,50,0.18);
+    transition:transform .25s ease, box-shadow .25s ease;
+  }
+  @media(hover:hover){
+    .cta:hover{ transform:translateY(-2px); box-shadow:0 14px 34px rgba(242,182,50,0.28); }
+  }
+  .cta:active{ transform:scale(0.97); }
+
+  /* ===== Fine print / footer ===== */
+  p.fun{
+    font-size:var(--fs-fine); color:var(--ink-ghost);
+    max-width:26rem; line-height:1.7;
+  }
+  p.fun em{ font-style:normal; color:var(--ink-muted); }
+  p.foot{ font-size:calc(var(--fs-fine) * 0.9); color:var(--ink-ghost); }
+
+  /* =========================================================
+     Breakpoints — a small, deliberate set (not one per device)
+     ========================================================= */
+
+  /* Mobile (portrait) — full-screen fit: card fills screen edge-to-edge,
+     content distributed evenly with comfortable spacing, no wasted areas. */
+  @media (max-width:600px){
+    body{
+      padding:0;
+      align-items:stretch;
+    }
+    .card{
+      min-height:100svh;
+      border-radius:0;
+      gap:0;
+      padding: max(1.2rem, env(safe-area-inset-top)) max(0.9rem, env(safe-area-inset-right)) max(0.9rem, env(safe-area-inset-bottom)) max(0.9rem, env(safe-area-inset-left));
+      justify-content:space-evenly;
+      border:none;
+      backdrop-filter:blur(4px);
+      -webkit-backdrop-filter:blur(4px);
+    }
+    .card::before, .card::after{ display:none; }
+    .stats{ gap:0.5rem; }
+    .sep{ min-height:1.2rem; }
+    .features{ grid-template-columns:repeat(2, 1fr); gap:0.35rem; }
+    .feature{ padding:0.6rem 0.4rem; }
+    .cta{ width:100%; justify-content:center; }
+    p.fun{ font-size:calc(var(--fs-fine) * 0.85); }
+  }
+
+  /* Landscape phones / short viewports: still full-screen but with scroll */
+  @media (max-height:520px) and (orientation:landscape){
+    body{ padding:0; align-items:stretch; }
+    .card{ min-height:100svh; border-radius:0; border:none; gap:0.3rem; padding:0.6rem 1rem; justify-content:space-evenly; }
+    .card::before, .card::after{ display:none; }
+    .lattice, .glow{ opacity:0.25; }
+    .stats{ gap:0.4rem; }
+    .features{ grid-template-columns:repeat(3, 1fr); gap:0.25rem; }
+    .feature{ padding:0.3rem 0.3rem; font-size:calc(var(--fs-feature) * 0.85); }
+    p.fun{ display:none; }
+  }
+
+  /* Very small phones: even tighter */
+  @media (max-width:340px){
+    .card{ padding:0.8rem 0.6rem; }
+    .stats{ gap:0.3rem; }
+    .features{ grid-template-columns:repeat(2, 1fr); gap:0.25rem; }
+    .feature{ font-size:calc(var(--fs-feature) * 0.8); }
+  }
+
+  /* Large screens: cap width, add breathing room, don't just stretch */
+  @media (min-width:1200px){
+    .card{ max-width:720px; padding:3rem 3rem; }
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .lattice, .badge-dot, .title .accent, .ring-fill{ animation:none !important; }
+    .ring-fill{ stroke-dashoffset:67.86; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="lattice"></div>
+  <div class="glow glow-gold"></div>
+  <div class="glow glow-violet"></div>
+
+  <main class="card">
+
+    <div class="logo">
+      <div class="logo-mark">SM</div>
+      <span class="logo-word">SmartMall</span>
+    </div>
+
+    <span class="badge"><span class="badge-dot"></span> الإطلاق وشيك</span>
+
+    <h1 class="title">
+      <span class="lead">شيء كبير قادم</span>
+      <span class="accent">قريباً جداً</span>
+    </h1>
+
+    <p class="desc">
+      منصة ذكية تجمع كل المولات والمتاجر في مكان واحد.
+      <strong>تجربة تسوّق</strong> لم تعهدها من قبل — سريعة، آمنة، وممتعة.
+      <span class="quote">"الانتظار الطويل هو أقسى أنواع الصبر، لكنه أجملها نهاية."</span>
+    </p>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="num">150+</div>
+        <div class="lbl">مول متصل</div>
+      </div>
+      <div class="sep"></div>
+      <div class="ring">
+        <svg viewBox="0 0 120 120">
+          <defs>
+            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#f7d27a" />
+              <stop offset="55%" stop-color="#f2b632" />
+              <stop offset="100%" stop-color="#7c6cf0" />
+            </linearGradient>
+          </defs>
+          <circle class="ring-track" cx="60" cy="60" r="54" />
+          <circle class="ring-fill" cx="60" cy="60" r="54" />
+        </svg>
+        <div class="ring-label">
+          <span class="pct">80%</span>
+          <span class="pctl">جاهز</span>
+        </div>
+      </div>
+      <div class="sep"></div>
+      <div class="stat">
+        <div class="num">12k+</div>
+        <div class="lbl">منتج مسجل</div>
+      </div>
+    </div>
+
+    <div class="features">
+      <div class="feature">⚡ أداء خارق</div>
+      <div class="feature">🔒 آمن وخاص</div>
+      <div class="feature">🚀 سريع البرق</div>
+      <div class="feature">🌐 لكل المتاجر</div>
+      <div class="feature">📈 تقارير ذكية</div>
+      <div class="feature">🤝 دعم 24/7</div>
+    </div>
+
+    <a href="mailto:support@smartmall.ps" class="cta">
+      <span>✉ ابقَ على تواصل</span>
+    </a>
+
+    <p class="fun">
+      الموقع تحت التطوير — فريقنا يشتغل كالروبوتات، لكن من غير بطاريات ولا شواحن.
+      <em>نعدك إنه يستاهل الانتظار 🤝</em>
+    </p>
+
+    <p class="foot">© 2026 SmartMall • الأفضل لم يأتِ بعد</p>
+
+  </main>
+
+</body>
+</html>
