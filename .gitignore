@@ -1,54 +1,65 @@
-# Dependencies
-node_modules/
-vendor/
+# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
-# Environment / secrets
+# compiled output
+dist
+build
+**/build/
+tmp
+out-tsc
+*.tsbuildinfo
+.expo
+.expo-shared
+web-build
+
+# dependencies
+node_modules
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# misc
+/.sass-cache
+/connect.lock
+/coverage
+/libpeerconnection.log
+npm-debug.log
+yarn-error.log
+testem.log
+/typings
+
+# Environment and secrets
 .env
 .env.*
 !.env.example
+!.env.*.example
+*.local
+*.secret
+*.secrets
+*.pem
+*.key
+*.p12
+*.jks
 
-# Laravel
-/storage/*.key
-storage/logs/
-bootstrap/cache/
-
-# Build output
-dist/
-build/
-.cache/
-
-# IDE
-.vscode/
-.idea/
-
-# OS
-Thumbs.db
+# System Files
 .DS_Store
+Thumbs.db
 
-# Logs
-*.log
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
 
-# Python
-__pycache__/
-*.pyc
-.venv/
-venv/
-
-# Temporary files
-*.tmp
-*.temp
-
-# Sensitive / personal files
-mall account.txt
-# Generated files
-frontend/distN.tar.gz
-output/
-Amazon-Image-Scrapper/downloaded_images/
-IIBBBBB'
-
-# Generated files
-frontend/distN.tar.gz
-output/
-Amazon-Image-Scrapper/downloaded_images/
-I'
-IIBBBBB'
+# Replit
+.cache/
+.local/
