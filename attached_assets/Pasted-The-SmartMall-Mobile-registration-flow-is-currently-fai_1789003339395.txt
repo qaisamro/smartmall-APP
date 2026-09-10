@@ -1,0 +1,156 @@
+The SmartMall Mobile registration flow is currently failing with:
+
+"Unable to connect to the server. Please check your internet connection."
+
+This happens when creating a new customer account.
+
+Investigate and fix ONLY the mobile registration/API integration issue.
+
+## STRICT SCOPE
+
+Inspect:
+
+* `/artifacts/smartmall-mobile`
+* the existing Laravel registration endpoint and its actual request contract
+
+Do not redesign the app.
+
+Do not modify unrelated features.
+
+Do not start Phase 4.
+
+Do not change the database unless absolutely required.
+
+## INVESTIGATION
+
+Trace registration end-to-end:
+
+Mobile registration screen
+→ centralized API client
+→ POST `/api/v1/register`
+→ Laravel route
+→ controller
+→ validation
+→ response
+
+Verify:
+
+1. The mobile app is using the correct API base URL.
+2. The actual request URL is exactly:
+   `https://samrtmall.cloud/api/v1/register`
+3. The HTTP method is POST.
+4. Request headers are correct.
+5. Content-Type is correct.
+6. The JSON/body field names exactly match the Laravel endpoint.
+7. The registration payload does not contain unsupported fields.
+8. The Laravel endpoint is reachable from the Expo/native environment.
+9. HTTPS/TLS is valid.
+10. The API response format is correctly handled by the mobile client.
+11. 422 validation responses are not incorrectly classified as network errors.
+12. Axios/network error handling is not hiding the real server response.
+13. The mobile registration request is not accidentally using a development/non-routable API URL.
+14. No request is being sent to the website URL instead of `/api/v1/register`.
+
+## IMPORTANT
+
+Do not simply replace the error message.
+
+Find the actual root cause.
+
+If the server returns:
+
+* 422 → show the real validation fields in a friendly way.
+* 401/403 → handle authentication/authorization correctly.
+* 404 → report endpoint mismatch.
+* 429 → show rate-limit message.
+* 5xx → show server error.
+* network/TLS failure → distinguish it from an HTTP response.
+
+Do not expose raw Laravel exceptions to customers.
+
+## REGISTRATION CONTRACT
+
+Inspect the existing Laravel endpoint and use its actual required fields.
+
+Do not assume field names.
+
+Do not invent a new registration API.
+
+Customer registration must remain customer-only.
+
+Do not allow:
+
+* owner
+* admin
+* delivery
+* agent
+* privileged roles
+
+to be selected through the mobile registration form.
+
+## SECURITY
+
+Do not log:
+
+* passwords
+* authentication tokens
+* sensitive personal information
+
+Do not put credentials in URLs.
+
+Keep the existing SecureStore/session architecture unchanged.
+
+## TESTING
+
+After fixing:
+
+1. Run mobile TypeScript check.
+2. Run lint.
+3. Verify Expo configuration.
+4. Test registration against the real API.
+5. Test invalid email.
+6. Test weak/invalid password.
+7. Test missing required fields.
+8. Test duplicate email if applicable.
+9. Test successful customer registration.
+10. Confirm successful registration can establish the expected session/login flow.
+11. Confirm existing login still works.
+12. Confirm existing Home/Malls/Product flows still work.
+
+If possible, test the exact API request independently from the mobile UI to determine whether the problem is backend connectivity or mobile request construction.
+
+## STOP CONDITION
+
+If the production API itself is unreachable or the backend registration endpoint is broken:
+
+STOP and report the exact HTTP/network error.
+
+Do not make unrelated backend changes.
+
+If a backend change is absolutely required, identify the smallest required change before applying it.
+
+## FINAL REPORT
+
+Report:
+
+### Root Cause
+
+The exact reason registration failed.
+
+### Fix
+
+Exact files changed.
+
+### API
+
+Exact endpoint and request contract used.
+
+### Verification
+
+Tests performed and results.
+
+### Remaining Issues
+
+Only real unresolved issues.
+
+Do not start another phase.
