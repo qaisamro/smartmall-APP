@@ -1,0 +1,66 @@
+لا أريد إجراء أي تعديل على Hostinger أو Laravel production أو قاعدة البيانات.
+
+الموقع الحالي SmartMall يعمل بشكل طبيعي، لذلك يجب أن يكون تطبيق React Native/Expo نسخة Mobile Client من نفس النظام الحالي، ويستخدم نفس الـ API endpoints الموجودة في الموقع، وليس إنشاء endpoints جديدة.
+
+المطلوب الآن:
+
+1. افحص كود الموقع الحالي داخل المشروع، خصوصًا:
+
+   * frontend
+   * services/smartmall-api
+   * routes/api.php
+   * OrderController
+   * أي services/hooks مرتبطة بالطلبات والدفع/checkout.
+
+2. حدد بالضبط كيف يقوم الموقع الحالي بإنشاء طلب للعميل:
+
+   * endpoint
+   * HTTP method
+   * authentication
+   * headers
+   * payload
+   * response
+   * error handling
+   * idempotency إن كانت موجودة.
+
+3. قارن ذلك مع تطبيق React Native الموجود في:
+   `artifacts/smartmall-mobile`
+
+4. عدّل تطبيق React Native فقط ليستخدم نفس API contract الذي يستخدمه الموقع الحالي.
+
+5. لا تضف endpoint جديدًا مثل:
+   `/customer/orders`
+
+6. لا تعدّل:
+
+   * Hostinger
+   * production Laravel
+   * database
+   * routes/api.php production
+   * CORS production
+   * Capacitor
+   * الموقع الحالي.
+
+7. لا تستخدم `/api/v1/customer/orders` في تطبيق الهاتف إذا كان الموقع الحالي يستخدم `/api/v1/orders`.
+
+8. بالنسبة للـ checkout:
+   يجب أن يرسل التطبيق نفس البيانات التي يرسلها الموقع، وبنفس أسماء الحقول، مع الحفاظ على التحقق من السعر والمخزون الموجود في الـ backend الحالي.
+
+9. بالنسبة لتسجيل الدخول والتسجيل والمنتجات والمولات والطلبات:
+   لا نخترع endpoints جديدة. استخدم endpoints الموجودة فعليًا والتي يعتمد عليها الموقع.
+
+10. بالنسبة للـ QR Scanner:
+    افحص أولًا كيف يعمل QR Scanner في الموقع الحالي، وما endpoint/format الذي يستخدمه، ثم اجعل تطبيق الهاتف يستخدم نفس المنطق والـ API بدل اختراع flow مختلف.
+
+قبل إجراء أي تعديل، أعطني تقريرًا قصيرًا يوضح:
+
+* كيف ينشئ الموقع الطلب حاليًا؟
+* ما هو endpoint الصحيح؟
+* ما هو payload الصحيح؟
+* كيف يعمل QR Scanner في الموقع؟
+* ما الملفات التي تحتاج تعديلًا داخل mobile فقط؟
+
+ثم نفّذ فقط التعديلات اللازمة داخل:
+`artifacts/smartmall-mobile`
+
+ولا تلمس production backend.
