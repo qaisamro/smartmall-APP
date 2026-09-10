@@ -31,6 +31,7 @@ use App\Http\Controllers\API\v1\AdminNotificationController;
 use App\Http\Controllers\API\v1\AdminMonitorController;
 use App\Http\Controllers\API\v1\SystemHealthController;
 use App\Http\Controllers\API\v1\PushNotificationController;
+use App\Http\Controllers\API\v1\FcmTokenController;
 use App\Http\Controllers\API\v1\ProductUploadController;
 use App\Http\Controllers\API\v1\SocialAuthController;
 use App\Http\Controllers\API\v1\ReturnController;
@@ -42,11 +43,19 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
     // Public routes
     Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/whatsapp/register/request', [AuthController::class, 'requestWhatsAppRegistrationCode'])
+        ->middleware('throttle:6,1');
+    Route::post('/whatsapp/register/verify', [AuthController::class, 'verifyWhatsAppRegistrationCode'])
+        ->middleware('throttle:10,1');
     Route::post('/login', [AuthController::class, 'login']);
     Route::get('/auth/google/redirect', [SocialAuthController::class, 'redirectToGoogleJson']);
     Route::get('/auth/google/callback', [SocialAuthController::class, 'handleGoogleCallbackStateless']);
     Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLink']);
     Route::post('/reset-password', [ForgotPasswordController::class, 'reset']);
+    Route::post('/whatsapp/reset/request', [ForgotPasswordController::class, 'requestWhatsAppCode'])
+        ->middleware('throttle:6,1');
+    Route::post('/whatsapp/reset/verify', [ForgotPasswordController::class, 'verifyWhatsAppCode'])
+        ->middleware('throttle:10,1');
     Route::get('/malls', [MallController::class, 'index']);
     Route::get('/malls/slug/{slug}', [MallController::class, 'showBySlug'])->middleware('mall.theme');
     Route::get('/malls/{id}/products', [ProductController::class, 'getMallProducts'])->middleware('mall.theme');
@@ -83,6 +92,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/push/subscribe', [PushNotificationController::class, 'subscribe']);
         Route::post('/push/unsubscribe', [PushNotificationController::class, 'unsubscribe']);
         Route::post('/push/test', [PushNotificationController::class, 'test']);
+        Route::post('/push/fcm-token', [FcmTokenController::class, 'register']);
+        Route::delete('/push/fcm-token', [FcmTokenController::class, 'destroy']);
         Route::post('/system-errors/report', [SystemHealthController::class, 'report']);
         Route::get('/orders/{id}', [OrderController::class, 'show']);
 
@@ -270,10 +281,23 @@ Route::prefix('v1')->group(function () {
             Route::post('/sync/incremental', [SyncController::class, 'incremental']);
         });
 
+        // Cashier POS routes are intentionally separate from owner POS routes.
+        Route::middleware('role:cashier')->prefix('cashier/pos')->group(function () {
+            Route::get('/products', [\App\Http\Controllers\API\v1\POSController::class, 'cashierProducts']);
+            Route::post('/sessions', [\App\Http\Controllers\API\v1\POSController::class, 'createCashierSession']);
+            Route::get('/sessions/{token}', [\App\Http\Controllers\API\v1\POSController::class, 'showCashierSession']);
+            Route::post('/sessions/{token}/items', [\App\Http\Controllers\API\v1\POSController::class, 'addCashierItem']);
+            Route::post('/finalize/{token}', [\App\Http\Controllers\API\v1\POSController::class, 'finalizeCashier']);
+            Route::post('/close/{token}', [\App\Http\Controllers\API\v1\POSController::class, 'closeCashierSession']);
+            Route::delete('/items/{id}', [\App\Http\Controllers\API\v1\POSController::class, 'removeCashierItem']);
+            Route::patch('/items/{id}', [\App\Http\Controllers\API\v1\POSController::class, 'updateCashierItem']);
+        });
+
         Route::get('/orders', [OrderController::class, 'index']);
-        Route::post('/orders', [OrderController::class, 'store']);
+        Route::post('/orders', [OrderController::class, 'store'])->middleware('throttle:10,1');
         
         Route::middleware('role:customer')->group(function() {
+            Route::post('/customer/orders', [OrderController::class, 'store'])->middleware('throttle:10,1');
             Route::get('/customer/purchases', [OrderController::class, 'customerPurchases']);
             Route::get('/customer/orders/tracking', [OrderController::class, 'customerOrderTracking']);
             Route::get('/customer/orders/{id}', [OrderController::class, 'customerShow']);
