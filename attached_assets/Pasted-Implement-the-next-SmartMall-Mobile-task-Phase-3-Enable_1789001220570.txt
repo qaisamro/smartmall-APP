@@ -1,0 +1,288 @@
+Implement the next SmartMall Mobile task:
+
+# Phase 3 — Enable Safe Customer Order Placement
+
+The previous Phase 3 work is complete, including:
+
+* Mobile cart
+* Checkout UI
+* Orders history
+* Order details
+* Server-side customer order ownership protection
+* Cross-account order access protection
+
+Now implement **safe real customer order placement**.
+
+## STRICT RULES
+
+This task may require Laravel backend changes because the current backend does not safely calculate order prices and stock.
+
+However:
+
+* First inspect the existing order/pending-order API end to end.
+* Do NOT rewrite existing order architecture unnecessarily.
+* Make the smallest safe changes required.
+* Preserve all existing SmartMall website functionality.
+* Do NOT break existing customer, owner, admin, or delivery workflows.
+* Do NOT modify Capacitor.
+* Do NOT start Phase 4.
+* Do NOT add payment gateway integration.
+* Do NOT add WhatsApp ordering.
+* Do NOT add scanner or notifications.
+
+## SECURITY REQUIREMENT
+
+The client must NEVER be trusted for:
+
+* Product price
+* Product total
+* Order subtotal
+* Order total
+* Product availability
+* Product stock
+
+The server/database must be authoritative.
+
+The mobile application may send only the minimum required information, such as:
+
+* product ID
+* quantity
+* supported customer/order information
+
+The server must retrieve the current product data from the database.
+
+## SERVER-SIDE ORDER VALIDATION
+
+Before creating an order:
+
+1. Authenticate the customer using the existing Sanctum authentication.
+2. Validate every submitted product ID.
+3. Verify every product is available for purchase.
+4. Retrieve the current product price from the database.
+5. Retrieve the current stock from the database.
+6. Verify requested quantity is greater than zero.
+7. Verify requested quantity does not exceed available stock.
+8. Calculate each line total on the server.
+9. Calculate subtotal on the server.
+10. Calculate the final order total on the server.
+11. Never use client-supplied price or total values.
+12. Create the order using the server-calculated values.
+13. Decrease/reserve stock safely according to the existing SmartMall order architecture.
+14. Use a database transaction so partial orders cannot be created.
+15. Prevent duplicate order submission where practical.
+
+If the existing system already has suitable order logic, reuse it rather than duplicating it.
+
+## CONCURRENCY / STOCK SAFETY
+
+Protect against two customers ordering the last available product simultaneously.
+
+Use appropriate database transaction/locking behavior supported by the existing Laravel architecture.
+
+Do not allow stock to become negative.
+
+If stock changes between checkout and order creation:
+
+* Reject the order safely.
+* Return a structured validation/conflict response.
+* Do not create a partial order.
+
+## API RESPONSE
+
+Return a clean response containing the created order information needed by the mobile application.
+
+Do not expose unnecessary internal/database information.
+
+Do not expose raw exception messages.
+
+Use appropriate HTTP status codes.
+
+## MOBILE CHECKOUT
+
+Update `/mobile` to use the newly secured order endpoint.
+
+The mobile app should send only:
+
+* product IDs
+* quantities
+* supported checkout/customer fields
+
+It must NOT send trusted:
+
+* unit prices
+* line totals
+* subtotal
+* final total
+
+Before submission, the mobile UI can display its local estimate, but after the server responds:
+
+* use the server-authoritative totals.
+* display the confirmed order.
+* clear the cart only after successful order creation.
+
+## ERROR HANDLING
+
+Handle at minimum:
+
+* 401 authentication failure
+* 403 forbidden
+* 404 product/order not found
+* 409 stock/price/order conflict if applicable
+* 422 validation error
+* 429 rate limit
+* 500 server error
+* network failure
+
+Use friendly Arabic/English messages.
+
+Never expose raw Laravel/PHP errors to the customer.
+
+## DUPLICATE SUBMISSION
+
+Prevent accidental double orders from:
+
+* double tapping the submit button
+* slow network
+* retrying a request
+
+Disable the checkout submit button while the request is in progress.
+
+If the existing backend supports an idempotency mechanism, use it.
+
+If not, implement the safest compatible approach without introducing unnecessary complexity.
+
+## WEBSITE REGRESSION SAFETY
+
+This is extremely important.
+
+The existing SmartMall website is production software.
+
+Before changing Laravel order behavior:
+
+* inspect how the existing website creates orders.
+* inspect existing order controllers/services/models.
+* inspect pending-order behavior.
+* inspect validation rules.
+* inspect stock handling.
+* inspect existing tests if available.
+
+Do not break the existing website's order flow.
+
+If the existing API is shared by the website and mobile:
+
+* preserve backward compatibility where possible.
+* Prefer centralizing authoritative calculation in the existing order service/controller rather than creating conflicting logic.
+
+## DATABASE
+
+Do NOT create unnecessary migrations.
+
+Only modify the database schema if absolutely required for safe order creation.
+
+If a migration is genuinely required:
+
+* explain why before applying it.
+* keep it minimal.
+* do not delete or rename existing columns.
+
+## TESTS
+
+Add focused backend tests for:
+
+1. Customer can create a valid order.
+2. Client cannot manipulate product price.
+3. Client cannot manipulate line total.
+4. Client cannot manipulate subtotal.
+5. Client cannot manipulate final total.
+6. Insufficient stock rejects the order.
+7. Invalid product rejects the order.
+8. Zero/negative quantity rejects the order.
+9. Stock cannot become negative.
+10. Order creation is transactional.
+11. Unauthenticated customer cannot create an order.
+12. Customer cannot create an order using another customer's data where ownership matters.
+13. Duplicate submission does not create unintended duplicate orders if the existing architecture supports protection.
+
+Also verify the existing website order behavior has not been broken.
+
+## MOBILE VERIFICATION
+
+After backend integration:
+
+* TypeScript check
+* ESLint
+* Expo Doctor
+* Android production bundle
+* iOS production bundle
+* Login
+* Product details
+* Add to cart
+* Checkout
+* Successful real order creation
+* Server-confirmed total
+* Cart clearing after success
+* Failed order preserves cart
+* Insufficient stock handling
+* Arabic RTL
+* English LTR
+* Light mode
+* Dark mode
+* Logout/login regression
+* Order history
+* Order detail
+* Cross-account order protection
+
+## IMPORTANT STOP CONDITION
+
+If the existing Laravel architecture makes safe order creation impossible without a major redesign:
+
+STOP.
+
+Do not perform a large rewrite.
+
+Instead report:
+
+* Existing order architecture
+* Existing endpoints
+* Security problems found
+* Exact minimum backend changes required
+* Any migration requirement
+* Any compatibility risks
+
+Do not fake successful orders.
+
+## FINAL REPORT
+
+When complete, report:
+
+### Backend Changes
+
+Exact Laravel files changed.
+
+### Mobile Changes
+
+Exact `/mobile` files changed.
+
+### API
+
+Exact endpoint used for creating orders.
+
+### Security
+
+How server-side price and stock authority is enforced.
+
+### Tests
+
+Exact tests run and results.
+
+### Regression
+
+How existing website behavior was checked.
+
+### Limitations
+
+Only real remaining limitations.
+
+Do NOT start Phase 4.
+
+Stop after this task and wait for approval.
