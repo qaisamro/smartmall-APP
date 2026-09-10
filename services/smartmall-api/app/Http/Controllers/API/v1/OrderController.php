@@ -3,7 +3,12 @@
 namespace App\Http\Controllers\API\v1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Mall;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\Product;
 use App\Repositories\OrderRepository;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -18,41 +23,194 @@ class OrderController extends Controller
 
     public function index(Request $request)
     {
-        if (auth()->user()->hasRole('super-admin')) {
+        $user = $request->user();
+
+        if (! $user) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+                'code' => 'unauthenticated',
+            ], 401);
+        }
+
+        if ($user->hasRole('super-admin')) {
             return response()->json($this->orderRepository->all());
         }
 
-        if (auth()->user()->hasRole('mall-owner')) {
+        if ($user->hasRole('mall-owner')) {
             // Logic to get orders for all malls owned by this user
-            return response()->json($this->orderRepository->getByUser(auth()->id())); // Placeholder
+            return response()->json($this->orderRepository->getByUser($user->getAuthIdentifier())); // Placeholder
         }
 
-        return response()->json($this->orderRepository->getByUser(auth()->id()));
+        return response()->json($this->orderRepository->getByUser($user->getAuthIdentifier()));
     }
 
     public function store(Request $request)
     {
+        $user = $request->user();
+
+        if (! $user) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+                'code' => 'unauthenticated',
+            ], 401);
+        }
+
+        if ($request->header('Idempotency-Key')) {
+            $request->merge(['idempotency_key' => $request->header('Idempotency-Key')]);
+        }
+
         $request->validate([
             'mall_id' => 'required|exists:malls,id',
-            'items' => 'required|array',
-            'items.*.product_id' => 'required|exists:products,id',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|integer|exists:products,id',
             'items.*.quantity' => 'required|integer|min:1',
+            'delivery_method' => 'nullable|in:in-mall,pickup,delivery,direct_purchase',
+            'delivery_address' => 'nullable|string|max:500',
+            'delivery_phone' => 'nullable|string|max:20',
+            'phone' => 'nullable|string|max:20',
+            'general_notes' => 'nullable|string|max:1000',
+            'idempotency_key' => 'nullable|string|max:100',
         ]);
 
-        return DB::transaction(function () use ($request) {
-            $totalAmount = 0;
-            // Calculate total and create order
-            // ...
-            
-            $order = $this->orderRepository->create([
-                'user_id' => auth()->id(),
-                'mall_id' => $request->mall_id,
-                'total_amount' => $totalAmount,
-                'status' => 'pending'
+        $idempotencyKey = $request->input('idempotency_key');
+
+        return DB::transaction(function () use ($request, $user, $idempotencyKey) {
+            if ($idempotencyKey) {
+                $existing = Order::query()
+                    ->where('user_id', $user->getAuthIdentifier())
+                    ->where('client_request_id', $idempotencyKey)
+                    ->with(['items.product:id,name_ar,name_en,image,link_photo', 'mall:id,name_ar,name_en,logo'])
+                    ->first();
+
+                if ($existing) {
+                    return response()->json([
+                        'message' => 'Order already created',
+                        'order' => $this->customerOrderPayload($existing),
+                    ], 200);
+                }
+            }
+
+            $mall = Mall::query()
+                ->whereKey($request->integer('mall_id'))
+                ->where('is_active', true)
+                ->firstOrFail();
+
+            $requestedQuantities = collect($request->input('items'))
+                ->groupBy('product_id')
+                ->map(fn ($items) => $items->sum(fn ($item) => (int) $item['quantity']));
+
+            $products = Product::query()
+                ->whereIn('id', $requestedQuantities->keys())
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            if ($products->count() !== $requestedQuantities->count()) {
+                throw new HttpResponseException(response()->json([
+                    'message' => 'One or more products are no longer available.',
+                    'code' => 'product_unavailable',
+                ], 409));
+            }
+
+            $totalCents = 0;
+            foreach ($requestedQuantities as $productId => $quantity) {
+                /** @var Product $product */
+                $product = $products->get($productId);
+                if (!$product || !$product->is_active || (int) $product->mall_id !== $mall->id) {
+                    throw new HttpResponseException(response()->json([
+                        'message' => 'One or more products are no longer available.',
+                        'code' => 'product_unavailable',
+                    ], 409));
+                }
+
+                if ($mall->enable_quantity_system && $quantity > (int) $product->stock_quantity) {
+                    throw new HttpResponseException(response()->json([
+                        'message' => 'One or more products do not have enough stock.',
+                        'code' => 'insufficient_stock',
+                        'product_id' => $product->id,
+                        'available' => (int) $product->stock_quantity,
+                    ], 409));
+                }
+
+                $unitPriceCents = (int) round(((float) $product->current_price) * 100);
+                $totalCents += $unitPriceCents * $quantity;
+            }
+
+            $deliveryMethod = $request->input('delivery_method')
+                ?: ($request->filled('delivery_address') ? 'delivery' : 'pickup');
+            $deliveryStatus = $deliveryMethod === 'delivery' ? 'preparing' : 'pending';
+
+            $order = Order::create([
+                'user_id' => $user->getAuthIdentifier(),
+                'mall_id' => $mall->id,
+                'total_amount' => number_format($totalCents / 100, 2, '.', ''),
+                'status' => 'pending',
+                'delivery_method' => $deliveryMethod,
+                'delivery_status' => $deliveryStatus,
+                'delivery_address' => $request->input('delivery_address'),
+                'delivery_phone' => $request->input('delivery_phone') ?: $request->input('phone'),
+                'phone' => $request->input('phone'),
+                'general_notes' => $request->input('general_notes'),
+                'delivery_fee' => 0,
+                'client_request_id' => $idempotencyKey,
             ]);
 
-            return response()->json($order, 201);
+            foreach ($requestedQuantities as $productId => $quantity) {
+                /** @var Product $product */
+                $product = $products->get($productId);
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $product->id,
+                    'quantity' => $quantity,
+                    'price_at_sale' => number_format(((float) $product->current_price), 2, '.', ''),
+                ]);
+
+                if ($mall->enable_quantity_system) {
+                    $product->decrement('stock_quantity', $quantity);
+                }
+            }
+
+            try {
+                \App\Jobs\ProcessOrderNotifications::dispatch($order);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Failed to dispatch order notifications', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            $order->load(['items.product:id,name_ar,name_en,image,link_photo', 'mall:id,name_ar,name_en,logo']);
+
+            return response()->json([
+                'message' => 'Order created',
+                'order' => $this->customerOrderPayload($order),
+            ], 201);
         });
+    }
+
+    private function customerOrderPayload(Order $order): array
+    {
+        return [
+            'id' => $order->id,
+            'mall_id' => $order->mall_id,
+            'status' => $order->status,
+            'total_amount' => $order->total_amount,
+            'delivery_method' => $order->delivery_method,
+            'delivery_status' => $order->delivery_status,
+            'delivery_fee' => $order->delivery_fee,
+            'delivery_address' => $order->delivery_address,
+            'delivery_phone' => $order->delivery_phone,
+            'general_notes' => $order->general_notes,
+            'created_at' => $order->created_at,
+            'mall' => $order->mall,
+            'items' => $order->items->map(fn (OrderItem $item) => [
+                'id' => $item->id,
+                'product_id' => $item->product_id,
+                'quantity' => $item->quantity,
+                'price_at_sale' => $item->price_at_sale,
+                'product' => $item->product,
+            ])->values(),
+        ];
     }
 
     public function createPending(Request $request)
@@ -104,8 +262,17 @@ class OrderController extends Controller
 
     public function customerPurchases(Request $request)
     {
+        $user = $request->user();
+
+        if (! $user) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+                'code' => 'unauthenticated',
+            ], 401);
+        }
+
         $orders = \App\Models\Order::with(['mall:id,name_ar', 'items.product:id,name_ar', 'user:id,name'])
-            ->where('user_id', auth()->id())
+            ->where('user_id', $user->getAuthIdentifier())
             ->latest()
             ->paginate(20);
         return response()->json($orders);
@@ -116,9 +283,23 @@ class OrderController extends Controller
         return $this->customerPurchases($request);
     }
 
-    public function customerShow($id)
+    public function customerShow(Request $request, $id)
     {
-        return $this->show($id);
+        $user = $request->user();
+
+        if (! $user) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+                'code' => 'unauthenticated',
+            ], 401);
+        }
+
+        $order = \App\Models\Order::with(['items', 'mall', 'user'])
+            ->whereKey($id)
+            ->where('user_id', $user->getAuthIdentifier())
+            ->firstOrFail();
+
+        return response()->json($order);
     }
 
     public function ownerOrders(Request $request)
