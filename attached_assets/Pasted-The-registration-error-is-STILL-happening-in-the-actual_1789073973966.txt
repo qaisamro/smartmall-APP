@@ -1,0 +1,195 @@
+The registration error is STILL happening in the actual mobile app:
+
+"Unable to connect to the server. Please check your internet connection."
+
+Do NOT assume the previous configuration fix solved the runtime issue.
+
+The previous verification showed that:
+
+`https://samrtmall.cloud/api/v1/register`
+
+is reachable over HTTPS and returns a valid Laravel 422 response.
+
+However, when I actually submit the registration form in the mobile app, the app still shows the network error.
+
+## IMPORTANT
+
+Investigate the ACTUAL runtime request made by the running Expo mobile application.
+
+Do not only inspect configuration files or perform static checks.
+
+Trace:
+
+Registration screen
+→ registration function
+→ API client
+→ resolved runtime API base URL
+→ Axios request
+→ actual `/register` request
+
+## CHECK THESE EXACTLY
+
+1. Print/inspect the resolved runtime API base URL in a safe development-only way.
+
+It MUST resolve to:
+
+`https://samrtmall.cloud/api/v1`
+
+2. Verify there is no runtime override such as:
+
+`https://api.smartmall.invalid/api/v1`
+
+3. Check all environment variable names actually used by the mobile application.
+
+4. Check Expo environment variable loading.
+
+5. Check EAS profile environment configuration.
+
+6. Check whether the currently running Expo workflow was restarted AFTER the configuration change.
+
+7. Check whether the registration screen imports a different API client than the one that was fixed.
+
+8. Check whether there is more than one API base URL in `/artifacts/smartmall-mobile`.
+
+9. Search the entire mobile artifact for:
+
+`smartmall.invalid`
+
+`samrtmall.cloud`
+
+`API_URL`
+
+`BASE_URL`
+
+`EXPO_PUBLIC`
+
+`axios.create`
+
+`/register`
+
+10. Check whether the request URL is constructed correctly.
+
+It must become exactly:
+
+`https://samrtmall.cloud/api/v1/register`
+
+## VERY IMPORTANT ERROR DIAGNOSTICS
+
+Temporarily add safe development diagnostics around the registration request.
+
+Do NOT log:
+
+* password
+* token
+* sensitive personal data
+
+It is safe to expose/log only:
+
+* resolved API origin/base URL
+* endpoint path
+* HTTP method
+* HTTP status if received
+* Axios error code
+* whether the error has a response
+* whether the error has a request
+
+For example, distinguish:
+
+### Case A
+
+HTTP response exists:
+
+`error.response != null`
+
+Then this is NOT a network connectivity failure.
+
+Handle the actual HTTP status.
+
+### Case B
+
+No response exists:
+
+`error.response == null`
+
+Then inspect:
+
+* error.code
+* error.request
+* request URL
+* TLS/transport failure
+* runtime environment
+
+Do not blindly translate every Axios error into:
+
+"Unable to connect to the server."
+
+## TEST THE EXACT RUNTIME URL
+
+From the same Expo runtime/environment being used by the mobile app, verify that:
+
+`https://samrtmall.cloud/api/v1/register`
+
+is actually reachable.
+
+An invalid registration should return a Laravel validation response such as HTTP 422.
+
+If the runtime cannot reach it, determine WHY.
+
+## DO NOT CHANGE BACKEND
+
+Do not modify Laravel.
+
+Do not modify database.
+
+Do not modify registration API.
+
+Do not create another endpoint.
+
+Do not start Phase 4.
+
+This is a mobile runtime/configuration investigation only unless concrete evidence proves otherwise.
+
+## AFTER FIXING
+
+Restart the Expo workflow.
+
+Then verify the ACTUAL registration screen again.
+
+Test:
+
+1. Open registration.
+2. Enter valid customer data.
+3. Submit.
+4. Confirm the request actually reaches:
+   `https://samrtmall.cloud/api/v1/register`
+5. Confirm the app no longer incorrectly displays a network error for an HTTP response.
+6. If the API returns 422, show the validation error.
+7. If the API returns 201/200, handle the successful registration correctly.
+
+## FINAL REPORT
+
+Report:
+
+### Actual Runtime Base URL
+
+The exact URL resolved by the running Expo app.
+
+### Actual Request
+
+Method + endpoint.
+
+### Root Cause
+
+Why the real application was still showing the network error.
+
+### Fix
+
+Exact files changed.
+
+### Verification
+
+Actual runtime registration test result.
+
+Do not claim registration is fixed unless the actual running Expo application was tested.
+
+Stop after this investigation.
