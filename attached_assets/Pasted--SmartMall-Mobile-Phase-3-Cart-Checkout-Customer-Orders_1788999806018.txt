@@ -1,0 +1,539 @@
+# SmartMall Mobile — Phase 3
+
+## Cart + Checkout + Customer Orders
+
+Phase 2 is complete and verified.
+
+Now implement **Phase 3 only** for the independent SmartMall mobile application.
+
+### 1. STRICT SCOPE
+
+Work only inside:
+
+`/mobile`
+
+Do NOT modify:
+
+* `/frontend`
+* `/backend`
+* Laravel routes
+* Laravel controllers
+* migrations
+* database schema
+* seeders
+* existing Capacitor application
+* production website behavior
+* owner/admin interfaces
+
+Do not start Phase 4.
+
+Do not add scanner, push notifications, complaints, delivery features, payment gateway, WhatsApp ordering, or native Google OAuth in this phase.
+
+Before changing anything, inspect only the existing `/mobile` implementation created in Phase 1 and Phase 2 and reuse its existing architecture.
+
+---
+
+# 2. PHASE 3 OBJECTIVE
+
+Add a professional mobile shopping flow:
+
+**Product → Cart → Checkout → Order Created → Order Details → Orders History**
+
+The experience must feel like a real standalone shopping application, not a WebView.
+
+---
+
+# 3. CART
+
+Create a proper mobile Cart screen.
+
+Requirements:
+
+* Add product to cart.
+* Increase quantity.
+* Decrease quantity.
+* Remove item.
+* Clear cart.
+* Show product image.
+* Show product name.
+* Show unit price.
+* Show quantity.
+* Show line total.
+* Show cart subtotal.
+* Show total item count.
+* Empty-cart state.
+* Loading states where necessary.
+* Error states.
+* RTL/LTR support.
+* Arabic and English translations.
+* ILS / ₪ formatting.
+
+Use the existing Zustand architecture where appropriate.
+
+Cart state may be persisted locally, but do not store authentication tokens in persisted Zustand state.
+
+Do not create a server-side cart because Phase 3 should work with the existing API contract.
+
+---
+
+# 4. PRICE AND STOCK SAFETY
+
+Never trust locally stored prices or totals when creating an order.
+
+The mobile application may use local cart data for display, but before final order creation:
+
+* Refresh/validate product information where necessary.
+* Use the existing backend order API if available.
+* Send product IDs and quantities rather than trusting client-calculated totals.
+* Never allow the client to override price.
+* Never allow the client to override stock.
+* Display the server-authoritative result.
+
+If the current backend does not expose a suitable order-creation endpoint, DO NOT modify the backend automatically.
+
+Instead:
+
+1. Inspect the existing API.
+2. Identify the correct existing endpoint if available.
+3. If no safe existing endpoint exists, document the exact backend API gap.
+4. Do not invent a fake successful order.
+5. Do not modify Laravel in this phase.
+
+---
+
+# 5. CHECKOUT
+
+Create:
+
+`/checkout`
+
+The checkout screen should be professional and simple.
+
+Include only fields supported by the existing backend/API.
+
+At minimum, if supported by the current API:
+
+* Customer information
+* Phone number
+* Delivery/address information
+* Order notes
+* Order summary
+* Items
+* Quantities
+* Server-confirmed total
+* Submit order button
+
+Use:
+
+* React Hook Form
+* Zod
+* Existing API client
+* Existing authentication/session system
+
+Do not add payment gateway integration.
+
+If payment method exists in the current API, display only the supported methods.
+
+---
+
+# 6. ORDER CREATION
+
+Implement the real order creation flow using the existing SmartMall API.
+
+Requirements:
+
+* Prevent duplicate submissions.
+* Disable submit while processing.
+* Handle network failures.
+* Handle validation errors.
+* Handle authentication expiration.
+* Handle insufficient stock.
+* Handle changed product prices.
+* Handle server errors.
+* Never show "Order successful" unless the server confirms creation.
+
+After successful creation:
+
+Navigate to:
+
+`/order/[id]`
+
+and show the created order.
+
+Clear the cart only after confirmed successful order creation.
+
+---
+
+# 7. ORDER DETAILS
+
+Create:
+
+`/order/[id]`
+
+Show:
+
+* Order number / ID
+* Order status
+* Created date
+* Items
+* Product names
+* Product images where available
+* Quantities
+* Prices
+* Totals
+* Customer information where available
+* Delivery information where available
+* Notes where available
+
+Use the existing API response shape.
+
+Do not invent fields that do not exist.
+
+Create proper loading, empty and error states.
+
+---
+
+# 8. ORDERS HISTORY
+
+Implement the existing Orders tab/screen.
+
+Create:
+
+`/orders`
+
+Show the authenticated customer's orders.
+
+For each order show:
+
+* Order number
+* Date
+* Status
+* Total
+* Item count if available
+
+Allow tapping an order to open:
+
+`/order/[id]`
+
+If the backend supports pagination, use pagination.
+
+Do not request an unbounded list.
+
+---
+
+# 9. NAVIGATION
+
+Use the existing Expo Router architecture.
+
+The customer navigation should now provide:
+
+* Home
+* Malls
+* Offers
+* Orders
+* Profile
+
+Cart should be accessible from the main shopping experience using a clear cart button/badge.
+
+Do not redesign the existing navigation unnecessarily.
+
+Protect:
+
+* Cart where authentication is required by the existing product rules.
+* Checkout.
+* Orders.
+* Order details.
+
+Unauthenticated users must not access protected order information.
+
+---
+
+# 10. CART BADGE
+
+Add a professional cart indicator.
+
+The badge should display:
+
+* Current number of items.
+* Update immediately after add/remove/quantity changes.
+* Work correctly after navigation.
+* Not become stale after cart mutations.
+
+Do not use excessive animations.
+
+---
+
+# 11. API ARCHITECTURE
+
+Continue using the centralized API layer from Phase 2.
+
+Screens must NOT contain raw Axios requests.
+
+Create/reuse dedicated API functions such as:
+
+* cart-related local actions
+* order creation
+* orders list
+* order detail
+
+Use TanStack Query for server state.
+
+Use proper query invalidation after order creation.
+
+Keep API types centralized.
+
+Do not duplicate API logic between screens.
+
+---
+
+# 12. AUTHENTICATION
+
+Continue using the existing Phase 2 authentication system.
+
+Use:
+
+* Expo SecureStore on native.
+* Existing session handling.
+* Existing centralized 401 handling.
+
+Never put tokens in:
+
+* URLs
+* logs
+* AsyncStorage
+* persisted Zustand state
+
+If the session expires during checkout:
+
+* stop the operation safely.
+* preserve the user's local cart where possible.
+* redirect to login.
+* after successful login, allow the customer to continue.
+
+---
+
+# 13. UX REQUIREMENTS
+
+The app must feel like a professional native shopping application.
+
+Use:
+
+* Safe areas.
+* Native touch targets.
+* Keyboard handling.
+* Loading skeletons where useful.
+* Empty states.
+* Error states.
+* Pull-to-refresh where useful.
+* Smooth navigation.
+* No horizontal overflow.
+* No desktop-style layouts.
+
+Arabic:
+
+* RTL
+
+English:
+
+* LTR
+
+Maintain the existing light/dark semantic theme.
+
+Do not introduce a completely new design system.
+
+---
+
+# 14. PERFORMANCE
+
+Keep the application scalable.
+
+Do NOT:
+
+* load unnecessary full product catalogs.
+* request all orders without pagination if pagination exists.
+* repeatedly fetch the same product data.
+* perform expensive calculations on every render.
+* create unnecessary global state.
+* persist large server responses locally.
+
+Use React Query caching appropriately.
+
+Use stable query keys.
+
+Avoid unnecessary rerenders.
+
+---
+
+# 15. ERROR HANDLING
+
+Every important operation must handle:
+
+* Offline/network failure
+* 401
+* 403
+* 404
+* 422 validation errors
+* 409/conflict if returned
+* 429/rate limiting
+* 500/server error
+* insufficient stock
+* changed price
+* invalid product
+* empty cart
+
+Display user-friendly Arabic/English messages.
+
+Never expose raw server errors to customers.
+
+---
+
+# 16. SECURITY
+
+Do not trust:
+
+* client-side prices
+* client-side totals
+* client-side stock
+* client-side order status
+* client-side ownership
+
+The server must remain authoritative.
+
+Customers must only be able to view their own orders through the existing API authorization.
+
+Do not expose admin/owner/delivery functionality.
+
+---
+
+# 17. DO NOT IMPLEMENT
+
+Explicitly DO NOT implement:
+
+* Barcode scanner
+* QR scanner
+* Push notifications
+* Complaints
+* Delivery dashboard
+* Owner dashboard
+* Admin dashboard
+* Payment gateway
+* WhatsApp ordering
+* Google native OAuth
+* Backend migrations
+* Database changes
+* Laravel code changes
+* Capacitor changes
+* Phase 4 features
+
+---
+
+# 18. VERIFICATION
+
+Before finishing Phase 3, run:
+
+* TypeScript validation
+* ESLint/lint validation
+* Expo dependency compatibility
+* Expo Doctor
+* Android production bundle validation
+* iOS production bundle validation
+* Route validation
+* Existing authentication regression check
+
+Test at minimum:
+
+1. Login
+2. Home
+3. Mall
+4. Product details
+5. Add product to cart
+6. Increase quantity
+7. Decrease quantity
+8. Remove product
+9. Clear cart
+10. Open checkout
+11. Validation errors
+12. Successful order creation if supported by existing API
+13. Order details
+14. Orders history
+15. Logout
+16. Login again
+17. Expired/invalid session handling
+18. Arabic RTL
+19. English LTR
+20. Light mode
+21. Dark mode
+22. Small mobile viewport
+23. Android bundle
+24. iOS bundle
+
+Do not claim an order flow works unless it has been tested against the real existing API.
+
+---
+
+# 19. IMPORTANT API GAP RULE
+
+If the existing backend does not provide a safe/complete order API required for this phase:
+
+**STOP at the API integration boundary.**
+
+Do not modify Laravel.
+
+Do not create fake endpoints.
+
+Do not create fake successful orders.
+
+Report:
+
+* Existing order endpoints discovered.
+* Which endpoint can be reused.
+* Which required capability is missing.
+* Exact backend change that would be required later.
+
+The mobile application must remain compatible with the existing production system.
+
+---
+
+# 20. FINAL REVIEW
+
+At the end:
+
+* Review only the Phase 3 mobile changes.
+* Confirm no unrelated files were changed.
+* Confirm Phase 1 and Phase 2 functionality still works.
+* Confirm no backend/frontend/Capacitor changes.
+* Confirm no Phase 4 work was started.
+
+Then stop.
+
+Report:
+
+### Implemented
+
+Exact Phase 3 features completed.
+
+### API Used
+
+Exact endpoints used.
+
+### API Gaps
+
+Any missing backend capability.
+
+### Files Changed
+
+Mobile-only file list.
+
+### Verification
+
+Exact checks and results.
+
+### Known Limitations
+
+Only real limitations.
+
+### Security
+
+Any relevant findings.
+
+Do not begin Phase 4.
