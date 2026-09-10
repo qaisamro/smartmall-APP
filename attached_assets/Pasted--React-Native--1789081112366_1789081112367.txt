@@ -1,0 +1,109 @@
+ممتاز. التقرير واضح وأوافق على الخطة.
+
+نفّذ الآن التعديلات داخل تطبيق React Native فقط، بحيث يطابق التطبيق الموقع الحالي حرفيًا في تدفق الطلب وQR Scanner.
+
+مهم جدًا:
+
+* لا تعدّل Hostinger.
+* لا تعدّل Laravel production.
+* لا تعدّل قاعدة البيانات.
+* لا تعدّل routes/api.php.
+* لا تعدّل CORS.
+* لا تعدّل الموقع الحالي.
+* لا تغيّر Capacitor.
+* لا تضف أي endpoint جديد.
+* لا تستخدم `/api/v1/customer/orders`.
+
+اعتمد فقط على الـ API الموجود والمستخدم حاليًا في الموقع:
+
+إنشاء الطلب:
+POST `/api/v1/orders/pending`
+
+تأكيد الطلب:
+POST `/api/v1/orders/pending/{id}/confirm`
+
+QR Scanner:
+POST `/api/v1/scan`
+
+### Checkout
+
+عدّل:
+`artifacts/smartmall-mobile/src/features/orders/ordersApi.ts`
+و
+`artifacts/smartmall-mobile/app/(customer)/checkout.tsx`
+
+ليصبح تدفق الهاتف مثل الموقع:
+
+1. تقسيم السلة حسب mall.
+2. إنشاء Pending Order لكل mall باستخدام نفس payload الذي يستخدمه الموقع.
+3. الاحتفاظ بـ `pending_id`.
+4. إذا كان الطلب delivery أو pickup، تنفيذ confirm بالبيانات المطلوبة.
+5. إذا كان in-mall، الانتقال إلى QR Scanner بدل التأكيد المباشر.
+6. بعد نجاح التأكيد فقط يتم اعتبار الطلب ناجحًا ومسح السلة.
+7. في حالة الفشل، لا تمسح السلة.
+8. استخدم نفس أسماء الحقول والـ response/error handling الموجود في الموقع.
+9. لا ترسل حقولًا جديدة من اختراع التطبيق.
+10. لا تعتمد على الأسعار المحلية كقيمة نهائية؛ اتبع نفس سلوك الموقع الحالي.
+
+### QR Scanner
+
+عدّل:
+`artifacts/smartmall-mobile/app/(customer)/scanner.tsx`
+
+وأضف API منفصلًا إذا كان ذلك أنظف:
+`artifacts/smartmall-mobile/src/features/scanner/scannerApi.ts`
+
+ليعمل مثل الموقع:
+
+1. افتح كاميرا الهاتف.
+2. اقرأ QR/barcode.
+3. أرسل القيمة المقروءة إلى:
+   `POST /api/v1/scan`
+   مع:
+   `{ code, mall_id }`
+   عندما يكون mall_id متاحًا من الطلب الحالي.
+4. تعامل مع response من backend.
+5. إذا كان QR خاصًا بمول، تحقق من أن `mall_id` الذي أعاده السيرفر يطابق المول الموجود في pending order.
+6. عند نجاح QR الخاص بطلب in-mall:
+   استدعِ:
+   `POST /api/v1/orders/pending/{id}/confirm`
+   مع:
+   `{ "delivery_method": "direct_purchase" }`
+7. بعد نجاح التأكيد اعرض نجاح الطلب وانتقل إلى شاشة نجاح الطلب.
+8. إذا كان QR غير صالح أو لم يطابق المول، اعرض رسالة واضحة بالعربية والإنجليزية.
+9. لا تحلل `/mall/{slug}` محليًا كبديل عن `/scan`.
+10. لا تنشئ QR logic مختلفًا عن الموقع.
+
+### مهم جدًا قبل التنفيذ
+
+قارن payload وresponse الموجودين في:
+`artifacts/smartmall/src/pages/Cart.jsx`
+و
+`artifacts/smartmall/src/components/QRScanner.jsx`
+و
+`artifacts/smartmall/src/services/scannerService.js`
+
+مع mobile، وانقل السلوك الفعلي الموجود في الموقع إلى React Native بدل إعادة تصميم الـ API.
+
+### التحقق
+
+بعد التعديل شغّل:
+
+* TypeScript
+* lint
+* Expo Doctor
+* Android production bundle
+* iOS production bundle
+
+وتأكد من عدم وجود أي تغييرات خارج:
+`artifacts/smartmall-mobile`
+
+ولا تنفذ أي تعديل على production backend.
+
+في النهاية أعطني:
+
+1. قائمة الملفات التي تغيرت.
+2. وصف Flow الطلب الجديد.
+3. وصف Flow QR الجديد.
+4. نتائج الاختبارات.
+5. تأكيد صريح أن Hostinger وLaravel production لم يتم تعديلهما.
