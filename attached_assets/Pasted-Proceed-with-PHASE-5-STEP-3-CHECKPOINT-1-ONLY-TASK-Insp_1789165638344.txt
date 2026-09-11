@@ -1,0 +1,112 @@
+Proceed with PHASE 5 — STEP 3 — CHECKPOINT 1 ONLY.
+
+TASK: Inspect the existing SmartMall mobile Search & Discovery architecture.
+
+IMPORTANT:
+- INSPECTION ONLY.
+- Do NOT modify any file.
+- Do NOT create files.
+- Do NOT install dependencies.
+- Do NOT change backend/Laravel.
+- Do NOT change Hostinger.
+- Do NOT change the existing website under artifacts/smartmall.
+- Do NOT modify Checkout, Orders, Cart, Scanner, Notifications, Profile, or Home.
+- Do NOT invent API endpoints.
+- Do NOT implement anything yet.
+
+Goal:
+Understand exactly what already exists in the mobile app and production website/API for Search & Discovery.
+
+Inspect the following:
+
+1. Existing mobile search routes/screens
+   - Search route
+   - Search UI
+   - Any existing search components
+   - How the Home screen currently reaches search
+
+2. Existing mobile search API/hooks
+   - Search-related files
+   - Existing API calls
+   - Query hooks
+   - Pagination/infinite query behavior
+   - Debouncing if already implemented
+   - Current response types
+
+3. Production website search implementation
+   Inspect artifacts/smartmall and identify:
+   - Actual search endpoints
+   - HTTP methods
+   - Query parameters
+   - Request headers/auth requirements
+   - Response structure
+   - Product search behavior
+   - Mall search behavior if available
+   - Category/section filtering if available
+   - Any sorting/filtering behavior
+
+4. Production Laravel API contract
+   Inspect the repository routes/controllers/resources/models only.
+   Determine the exact production endpoints already used by the website.
+
+IMPORTANT:
+Do not assume an endpoint exists merely because a controller looks capable of supporting it.
+Prefer the endpoint actually used by the existing production website.
+
+5. Current mobile capabilities
+Determine whether mobile already supports:
+   - Global product search
+   - Mall search
+   - Search within a mall
+   - Category filtering
+   - Section filtering
+   - Product pagination
+   - Empty states
+   - Search history
+   - Recent searches
+   - Search suggestions
+   - Debounced search
+   - Pull-to-refresh
+
+6. UX/navigation
+Inspect:
+   - app routes
+   - Expo Router structure
+   - Home search entry point
+   - Existing Product Details route
+   - Existing Mall Details route
+   - Existing category/filter UI
+
+7. i18n
+Determine:
+   - Existing Arabic/English search translations
+   - RTL/LTR handling
+   - Any hardcoded search strings
+
+8. Performance
+Inspect:
+   - Existing React Query configuration
+   - staleTime/cache behavior
+   - pagination strategy
+   - request cancellation
+   - debounce implementation
+   - unnecessary network requests
+
+9. Scope protection
+Confirm which files would likely need modification for a future Search & Discovery implementation.
+
+Return ONLY an inspection report with:
+
+A. Existing mobile search architecture
+B. Actual production website/API search contract
+C. Current mobile gaps
+D. Recommended Search & Discovery architecture
+E. Exact likely files to modify/create
+F. Any risks or production limitations
+G. Explicit confirmation:
+   "No files were modified."
+
+STOP after Checkpoint 1.
+
+Do NOT start coding.
+Do NOT run full validation.
