@@ -1,0 +1,248 @@
+We are starting Phase 5 — Step 2 for SmartMall Mobile.
+
+TASK:
+Customer Profile & Account
+
+IMPORTANT:
+Do NOT start coding immediately.
+
+This task MUST be completed through explicit checkpoints.
+
+==================================================
+CHECKPOINT 1 — INSPECTION ONLY
+==============================
+
+First inspect the existing project WITHOUT modifying any files.
+
+Inspect ONLY the information needed for this task:
+
+1. `artifacts/smartmall-mobile`
+
+   * authentication architecture
+   * current user state/query
+   * SecureStore/session handling
+   * existing Profile screen
+   * existing navigation
+   * existing i18n
+   * existing theme system
+   * existing logout implementation
+
+2. `artifacts/smartmall`
+
+   * existing customer profile/account implementation
+   * how the website loads the authenticated customer
+   * profile update behavior if available
+   * logout behavior
+
+3. Production Laravel routes already present in the repository:
+
+   * customer profile/user routes
+   * logout routes
+   * password/profile update routes if any
+
+4. Existing API client/hooks/types used by the mobile app.
+
+DO NOT modify:
+
+* Backend
+* Hostinger
+* Website
+* Mobile files
+
+At the end of Checkpoint 1, report:
+
+A. Current authenticated-user endpoint:
+
+* exact URL
+* HTTP method
+* response shape
+
+B. Profile update endpoint:
+
+* exact URL
+* HTTP method
+* request shape
+* response shape
+  OR explicitly state:
+  "No production profile-update endpoint found."
+
+C. Logout:
+
+* exact existing behavior
+* endpoint if one exists
+* OR local/session-only logout if that is what the application uses
+
+D. Existing mobile Profile screen:
+
+* what already exists
+* what is missing
+
+E. Existing language/theme architecture.
+
+F. Exact files that would need to change.
+
+STOP HERE.
+
+Do NOT implement anything until the inspection report is complete.
+
+==================================================
+CHECKPOINT 2 — API/ARCHITECTURE DECISION
+========================================
+
+After inspection, determine the safest implementation based ONLY on existing production contracts.
+
+Rules:
+
+* Never invent an endpoint.
+* Never create a backend endpoint.
+* Never modify Hostinger.
+* If profile editing is unsupported by production, make Profile read-only.
+* Reuse the existing authenticated user query/cache.
+* Reuse existing i18n.
+* Reuse existing theme system.
+* Reuse existing logout/session mechanism.
+
+Before coding, provide a short implementation plan containing:
+
+1. Screens/routes to add or modify.
+2. API hooks to add or reuse.
+3. Query/cache changes.
+4. Navigation changes.
+5. Files that will be modified.
+
+Then proceed to coding.
+
+==================================================
+CHECKPOINT 3 — IMPLEMENTATION
+=============================
+
+Implement ONLY Customer Profile & Account.
+
+Required functionality:
+
+1. Professional Profile screen:
+
+   * customer name
+   * phone
+   * email if available
+   * avatar/initials if appropriate
+   * account information only when provided by API
+
+2. Account actions:
+
+   * Orders → existing Orders screen
+   * Notifications → existing Notifications screen
+   * Complaints → existing Complaints screen ONLY if an existing route is available
+   * Language
+   * Theme
+   * Logout
+
+3. Profile editing:
+
+   * ONLY if production API supports it.
+   * Otherwise Profile remains read-only.
+
+4. Language:
+
+   * Arabic
+   * English
+   * preserve existing RTL/LTR architecture
+
+5. Theme:
+
+   * Light
+   * Dark
+   * reuse existing theme system
+
+6. Logout:
+
+   * reuse current authentication architecture
+   * clear session securely
+   * clear appropriate authenticated cache
+   * return to Login
+
+UI:
+
+* professional native design
+* safe area
+* proper spacing
+* responsive
+* loading/error states
+* proper touch targets
+* accessibility labels
+
+RTL:
+
+* use `direction`
+* use `paddingStart` / `paddingEnd`
+* do NOT use `row-reverse`
+* do NOT use unnecessary hardcoded left/right positioning
+
+==================================================
+CHECKPOINT 4 — SCOPE VERIFICATION
+=================================
+
+Before final validation, inspect the diff.
+
+Confirm explicitly:
+
+* Only `artifacts/smartmall-mobile` changed.
+* Backend unchanged.
+* Hostinger untouched.
+* Website unchanged.
+* Checkout unchanged.
+* Orders logic unchanged.
+* Cart unchanged.
+* QR Scanner unchanged.
+* Notifications implementation unchanged except absolutely necessary navigation/cache wiring.
+* Home unchanged except absolutely necessary Profile navigation.
+* No unnecessary dependencies added.
+* No invented API endpoints.
+* No `row-reverse`.
+
+If any unexpected file changed, STOP and revert only the unrelated change.
+
+==================================================
+CHECKPOINT 5 — VALIDATION
+=========================
+
+Run:
+
+* TypeScript validation
+* Lint
+* Expo Doctor
+* Android production bundle
+* iOS production bundle
+* `git diff --check`
+
+Also check for:
+
+* Router warnings
+* Metro route-tree warnings
+* runtime import errors
+* navigation errors
+
+==================================================
+CHECKPOINT 6 — FINAL REPORT
+===========================
+
+Report:
+
+1. Inspection findings.
+2. Exact production API endpoints used.
+3. Files changed.
+4. Features implemented.
+5. Profile editing supported or not.
+6. Logout behavior.
+7. Language/theme behavior.
+8. Scope verification.
+9. All validation results.
+10. Any limitations.
+
+Provide a short manual Android Expo Go test checklist.
+
+IMPORTANT:
+This is Phase 5 — Step 2 only.
+
+Do NOT begin Phase 5 — Step 3.
+STOP after this task and wait for manual testing.
