@@ -1,0 +1,207 @@
+Proceed with CHECKPOINT 3 ONLY — IMPLEMENTATION.
+
+Implement the approved Customer Profile & Account architecture from Checkpoint 2.
+
+IMPORTANT:
+- Do NOT modify Laravel/backend.
+- Do NOT modify Hostinger or production configuration.
+- Do NOT modify artifacts/smartmall.
+- Do NOT modify Checkout, Orders logic, Cart, Scanner, Notifications implementation, or Home.
+- Do NOT install any dependencies.
+- Do NOT create a Complaints route.
+- Do NOT invent API endpoints.
+- Do NOT change the existing authentication architecture.
+- Do NOT change Bottom Navigation structure.
+- Do NOT use row-reverse for RTL.
+
+Implement only the approved mobile Profile & Account scope.
+
+Files allowed to modify/create:
+
+1. artifacts/smartmall-mobile/app/(customer)/(tabs)/profile.tsx
+2. artifacts/smartmall-mobile/app/(customer)/edit-profile.tsx
+3. artifacts/smartmall-mobile/app/(customer)/_layout.tsx
+4. artifacts/smartmall-mobile/src/features/profile/profileApi.ts
+5. artifacts/smartmall-mobile/src/features/profile/useProfileHooks.ts
+6. artifacts/smartmall-mobile/src/types/auth.ts
+7. artifacts/smartmall-mobile/src/features/auth/useAuthHooks.ts
+8. artifacts/smartmall-mobile/src/i18n/index.ts
+
+Implementation requirements:
+
+A. Profile data
+- Use GET /customer/profile as the primary Profile screen data source.
+- Keep /me exclusively for auth/session state.
+- Do not unnecessarily refetch /me when opening Profile.
+- Display real API data only.
+- Gracefully handle missing optional fields.
+
+B. Profile UI
+Create a professional mobile Profile & Account screen with:
+- User avatar/initials derived from real user data.
+- Full name.
+- Email.
+- Account section.
+- Edit Profile action.
+- Preferences section.
+- Language selector.
+- Theme selector: Light / Dark.
+- Activity section:
+  - Orders shortcut → existing Orders route.
+  - Notifications shortcut → existing Notifications route.
+- Other section if useful.
+- Logout action.
+- Loading state.
+- Error + retry state.
+- Empty/fallback handling.
+- Accessible touch targets.
+- Safe-area support.
+- Existing light/dark colors.
+- Existing Arabic/English i18n.
+- Proper RTL/LTR alignment.
+
+Do NOT add Complaints because no mobile Complaints route exists.
+
+C. Edit Profile
+Create:
+artifacts/smartmall-mobile/app/(customer)/edit-profile.tsx
+
+Allow editing ONLY:
+- name
+- email
+
+Use:
+PUT /customer/profile
+
+Requirements:
+- Pre-fill current values.
+- React Hook Form/Zod only if already installed and already used by the project; do NOT install anything.
+- Arabic and English validation messages.
+- Loading state.
+- Server error handling.
+- Success feedback.
+- On success update ['customer-profile'] with the server response.
+- Then refresh the authenticated user using the existing authStore.refreshUser().
+- Do not clear or replace the token.
+
+Do NOT expose editable controls for:
+- phone
+- whatsapp
+- address
+- birthdate
+- gender
+- status/is_active
+
+They may be displayed read-only only if useful and actually returned by the API.
+
+D. Profile API
+Create/use:
+src/features/profile/profileApi.ts
+
+Only implement:
+- GET /customer/profile
+- PUT /customer/profile
+
+Use the existing apiClient and existing authentication handling.
+
+Do not add any endpoint not confirmed during Checkpoint 1.
+
+E. Profile hooks
+Create:
+src/features/profile/useProfileHooks.ts
+
+Implement:
+- useCustomerProfile
+- useUpdateCustomerProfile
+
+Use the existing QueryClient.
+
+After successful update:
+queryClient.setQueryData(['customer-profile'], updatedProfile)
+
+Then call the existing authStore.refreshUser().
+
+Do not perform unnecessary duplicate refetches.
+
+F. Logout
+Modify only the existing logout hook behavior in:
+src/features/auth/useAuthHooks.ts
+
+Keep:
+POST /logout
+SecureStore token removal
+auth state reset
+navigation to login
+
+Add only:
+queryClient.clear()
+
+Make sure cache clearing does not break the logout navigation or cause race conditions.
+
+G. Theme
+Do NOT create:
+- ThemeProvider
+- ThemeContext
+- theme store
+- new persistence system
+- new dependency
+
+Use the existing useColorScheme/colors architecture and Appearance.setColorScheme() if compatible with the current Expo/React Native version.
+
+Light/Dark selection is session-level only.
+Do not add SecureStore persistence.
+
+H. Language
+Use the existing:
+changeAppLanguage(language)
+
+Do not create another language mechanism.
+
+I. Navigation
+Add only the edit-profile route.
+Keep:
+Home
+Malls
+Offers
+Orders
+Profile
+
+Notifications remains accessible through its existing route.
+
+Do not add Search or Complaints to Bottom Navigation.
+
+J. RTL
+Arabic must behave as true RTL:
+- text aligned right
+- logical spacing
+- icons/actions positioned correctly
+- headers and rows visually correct
+- English remains LTR
+
+Do not use row-reverse.
+Respect the existing I18nManager/direction architecture.
+
+K. Production safety
+Do not change anything outside artifacts/smartmall-mobile.
+
+Before finishing, inspect git diff and confirm:
+- no backend changes
+- no Hostinger changes
+- no website changes
+- no Checkout changes
+- no Orders logic changes
+- no Cart changes
+- no Scanner changes
+- no Notifications implementation changes
+- no Home changes
+- no dependency changes
+
+STOP after implementation.
+
+Do NOT start Checkpoint 4 or validation yet.
+
+Return:
+1. Files changed
+2. What was implemented
+3. Any implementation limitation
+4. Confirmation that scope remained mobile-only
