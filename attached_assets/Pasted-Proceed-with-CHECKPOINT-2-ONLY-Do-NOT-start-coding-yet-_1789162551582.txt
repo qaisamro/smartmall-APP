@@ -1,0 +1,69 @@
+Proceed with CHECKPOINT 2 ONLY.
+
+Do NOT start coding yet.
+
+Based on the completed inspection, make the safest implementation decision for Customer Profile & Account.
+
+Your decision MUST address:
+
+1. Which existing production endpoint should be the primary source for the mobile Profile screen:
+
+   * `/me`
+   * `/customer/profile`
+   * or both, if there is a clear reason.
+
+2. Profile update:
+
+   * Determine exactly which fields are safe to expose for editing based on the inspected production behavior.
+   * Do not assume that `phone`, `whatsapp`, `address`, `birthdate`, or `gender` are persisted successfully merely because validation accepts them.
+   * If necessary, keep unsupported/unverified fields read-only.
+   * Do not modify backend.
+
+3. WhatsApp:
+
+   * Decide whether the existing `/customer/profile/whatsapp` endpoint should be used separately.
+   * Do not duplicate it through the general profile update endpoint if that could cause inconsistent behavior.
+
+4. Logout:
+
+   * Decide whether clearing the authenticated React Query cache is necessary.
+   * If yes, specify the minimal mobile-only change required.
+   * Do not redesign the authentication system.
+
+5. Theme:
+
+   * The current app uses `useColorScheme()` and has no theme store.
+   * Decide the safest way to expose Light/Dark in Profile WITHOUT creating a second theme provider or destabilizing existing screens.
+   * If persistent manual theme selection would require a broad architecture change, prefer the safest minimal solution and clearly state the limitation.
+
+6. Language:
+
+   * Reuse the existing i18n system exactly.
+   * Do not create a second language system.
+
+7. Navigation:
+
+   * Orders → existing Orders route.
+   * Notifications → existing Notifications route.
+   * Complaints → only if an existing mobile route exists.
+   * Do not create a fake Complaints screen.
+
+8. Cache strategy:
+
+   * Explain which existing React Query queries/cache entries should be updated or invalidated after profile changes.
+   * Avoid unnecessary refetching.
+
+9. Exact implementation plan:
+
+   * List the minimum files that will be modified.
+   * Explain what each file will change.
+   * Confirm that backend, Hostinger, website, Checkout, Orders, Cart, Scanner, Notifications, and Home will remain untouched.
+
+IMPORTANT:
+STOP after Checkpoint 2.
+
+Do NOT modify any files.
+Do NOT install dependencies.
+Do NOT implement the Profile screen yet.
+
+Return only the architecture/implementation decision and the exact planned file changes.
