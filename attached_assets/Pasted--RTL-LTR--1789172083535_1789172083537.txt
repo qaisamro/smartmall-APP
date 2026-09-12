@@ -1,0 +1,485 @@
+## مهمة عاجلة: إصلاح اتجاه RTL/LTR للتطبيق بالكامل
+
+المشكلة الحالية:
+
+عند اختيار اللغة العربية، يتم تغيير النصوص والترجمات إلى العربية، لكن **اتجاه واجهة التطبيق بالكامل يبقى مثل English / LTR**.
+
+أريد إصلاح المشكلة على مستوى **البنية المركزية للتطبيق**، وليس إضافة حلول يدوية لكل شاشة.
+
+### الهدف النهائي
+
+عند اختيار:
+
+* العربية → التطبيق بالكامل RTL
+* English → التطبيق بالكامل LTR
+
+ويجب أن يشمل ذلك:
+
+* Root Layout
+* Header
+* Bottom Navigation
+* Tabs
+* Sidebars / Drawers
+* Cards
+* Forms
+* Inputs
+* Buttons
+* Icons/arrows ذات العلاقة بالاتجاه
+* Lists
+* Product screens
+* Mall screens
+* Search
+* Cart
+* Checkout
+* Orders
+* Notifications
+* Profile
+* Login/Register
+* Scanner
+* Offers
+
+---
+
+# 1. افحص أولًا قبل تعديل أي شيء
+
+لا تبدأ بالتعديل مباشرة.
+
+افحص هذه الملفات والأجزاء:
+
+* `src/i18n/index.ts`
+* `app/_layout.tsx`
+* جميع ملفات language switching
+* `I18nManager`
+* `isRTL`
+* `writingDirection`
+* `direction`
+* أي `useLanguage` أو language context
+* Expo Router root layout
+* `(customer)` layout
+* `(tabs)` layout
+* Bottom Tab Navigator
+* أي RTL utility موجود حاليًا
+
+حدد بالضبط:
+
+1. أين يتم تحديد اللغة الحالية؟
+2. أين يتم تحميل اللغة عند startup؟
+3. هل اللغة العربية يتم تحميلها قبل إنشاء الـ root UI؟
+4. هل `I18nManager` يتم ضبطه عند startup؟
+5. هل `I18nManager.forceRTL()` أو `allowRTL()` مستخدمة؟
+6. ماذا يحدث عند تغيير اللغة أثناء تشغيل التطبيق؟
+7. هل التطبيق يحتاج Reload لكي يتغير الاتجاه؟
+8. هل يوجد أكثر من مكان يتحكم بالاتجاه؟
+
+لا تغيّر أي API أو backend.
+
+---
+
+# 2. إصلاح مركزي حقيقي
+
+أريد أن يكون هناك مصدر واحد للحقيقة:
+
+```text
+Arabic  => RTL
+English => LTR
+```
+
+يجب مزامنة اللغة الحالية مع React Native `I18nManager`.
+
+المطلوب تقريبًا:
+
+```text
+currentLanguage
+      ↓
+isArabic
+      ↓
+I18nManager direction
+      ↓
+Root Layout
+      ↓
+Entire App
+```
+
+لا أريد حلولًا منفصلة لكل شاشة.
+
+---
+
+# 3. Startup / Initial Language
+
+عند تشغيل التطبيق لأول مرة:
+
+إذا كانت اللغة المحفوظة Arabic:
+
+```text
+language = ar
+I18nManager = RTL
+```
+
+إذا كانت اللغة المحفوظة English:
+
+```text
+language = en
+I18nManager = LTR
+```
+
+يجب تنفيذ ذلك **قبل أن يظهر التطبيق في الاتجاه الخاطئ قدر الإمكان**.
+
+إذا كان React Native يتطلب Reload لتطبيق تغيير `I18nManager`، تعامل مع ذلك بطريقة صحيحة وآمنة.
+
+لا تستخدم حلولًا تؤدي إلى loop أو إعادة تشغيل التطبيق بشكل مستمر.
+
+---
+
+# 4. Language Switching
+
+عند تغيير:
+
+English → Arabic
+
+يجب أن يصبح التطبيق:
+
+```text
+Arabic
+RTL
+```
+
+وعند:
+
+Arabic → English
+
+يجب أن يصبح:
+
+```text
+English
+LTR
+```
+
+إذا كان تغيير `I18nManager` يتطلب Reload، استخدم آلية مناسبة للتطبيق الحالي.
+
+المهم أن المستخدم بعد تغيير اللغة يرى التطبيق كاملًا بالاتجاه الصحيح.
+
+---
+
+# 5. Root Layout
+
+يجب أن يكون الـ Root Layout هو المسؤول عن الاتجاه العام.
+
+استخدم approach مركزي مثل:
+
+```text
+I18nManager
++
+root direction
+```
+
+ولا تعتمد على تعديل كل شاشة منفردة.
+
+يمكن استخدام:
+
+```tsx
+direction: isRTL ? 'rtl' : 'ltr'
+```
+
+على الـ root container إذا كان ذلك مناسبًا، لكن لا تستخدمه كبديل عن إصلاح `I18nManager`.
+
+---
+
+# 6. ممنوع هذا النوع من الحلول
+
+لا أريد:
+
+```tsx
+flexDirection: 'row-reverse'
+```
+
+في عشرات الملفات.
+
+ولا أريد:
+
+```tsx
+isRTL ? 'row-reverse' : 'row'
+```
+
+في كل component.
+
+ولا أريد نسخ نفس RTL logic داخل كل شاشة.
+
+ولا أريد تغيير layouts الحالية إلا إذا كان هناك عنصر محدد يحتاج معالجة بعد إصلاح الاتجاه المركزي.
+
+**RTL يجب أن يكون Native/App-level وليس مجموعة hacks.**
+
+---
+
+# 7. Bottom Navigation
+
+راجع Bottom Navigation بشكل خاص.
+
+في Arabic يجب أن يتعامل التطبيق مع الاتجاه RTL بشكل طبيعي.
+
+في English يجب أن يبقى LTR.
+
+لا تغيّر أسماء أو ترتيب التبويبات الوظيفي الحالي.
+
+التبويبات الحالية:
+
+```text
+Home
+Malls
+Offers
+Orders
+Profile
+```
+
+لا تغيّر الـ business logic أو routes.
+
+---
+
+# 8. Audit للشاشات
+
+بعد إصلاح الـ global direction، اختبر على الأقل:
+
+### Authentication
+
+* Login
+* Register
+
+### Customer
+
+* Home
+* Malls
+* Mall Details
+* Search
+* Product Details
+* Cart
+* Checkout
+* Orders
+* Order Details
+* Notifications
+* Profile
+* Edit Profile
+* Scanner
+* Offers
+
+أريد التأكد أن الاتجاه يأتي من الـ global RTL/LTR architecture وليس من hacks محلية.
+
+---
+
+# 9. Translation
+
+أثناء الفحص، إذا وجدت نصوصًا عربية/إنجليزية hard-coded بسبب الإصلاح الحالي، لا تعالج المشكلة باتجاه layout فقط.
+
+راجع أيضًا:
+
+* Arabic translations
+* English translations
+* Buttons
+* Empty states
+* Error messages
+* Search labels
+* Mall filters
+* Retry
+* Navigation labels
+
+لكن لا تغيّر أي نص غير متعلق بالمشكلة بدون سبب.
+
+---
+
+# 10. Search و Malls
+
+لدينا إصلاحات سابقة في:
+
+```text
+app/(customer)/(tabs)/search.tsx
+app/(customer)/(tabs)/malls.tsx
+src/i18n/index.ts
+```
+
+لا تكسر هذه الإصلاحات.
+
+يجب الحفاظ على:
+
+* Arabic/English labels
+* writingDirection للـ inputs عند الحاجة
+* Search behavior
+* 500ms debounce
+* Clear buttons
+* Mall filters
+* Horizontal scrolling للفلاتر
+* RTL/LTR alignment
+
+لكن إذا أصبح الـ global RTL architecture قادرًا على إدارة الاتجاه، لا تضف hacks إضافية.
+
+---
+
+# 11. لا تغيّر أي شيء خارج نطاق المهمة
+
+ممنوع تغيير:
+
+* Laravel backend
+* API endpoints
+* Database
+* Authentication logic
+* Orders logic
+* Cart logic
+* Product logic
+* Notifications logic
+* Existing production website
+* Hostinger
+* package dependencies
+* Expo version
+
+إلا إذا وجدت ضرورة تقنية حقيقية، وفي هذه الحالة توقف واذكر السبب قبل التغيير.
+
+---
+
+# 12. Validation
+
+بعد التنفيذ نفّذ:
+
+1. TypeScript
+2. ESLint
+3. Expo web export / route validation
+4. Android production bundle
+5. iOS production bundle
+6. `git diff --check`
+7. Search for RTL hacks مثل:
+
+   * `row-reverse`
+   * duplicate `isRTL` direction logic
+8. dependency diff
+9. scope diff
+
+لا تعتبر Expo Doctor warning القديم مشكلة جديدة إذا كان نفس التحذير المعروف مسبقًا.
+
+---
+
+# 13. الأهم: Manual Test
+
+لا تعتبر المهمة مكتملة بمجرد أن:
+
+```text
+TypeScript passed
+ESLint passed
+Build passed
+```
+
+يجب اختبار التطبيق فعليًا في Expo Go.
+
+اختبر:
+
+### Test A — English
+
+افتح التطبيق باللغة English وتأكد:
+
+```text
+LTR
+```
+
+ثم افتح:
+
+* Login
+* Home
+* Malls
+* Search
+* Product
+* Cart
+* Orders
+* Profile
+
+### Test B — Arabic
+
+غيّر إلى Arabic.
+
+إذا كان النظام يتطلب Reload، نفذ الـ reload بالطريقة الصحيحة.
+
+ثم تأكد:
+
+```text
+RTL
+```
+
+واختبر نفس الشاشات.
+
+### Test C — Switch Back
+
+Arabic → English
+
+ثم:
+
+```text
+LTR
+```
+
+### Test D
+
+English → Arabic
+
+ثم:
+
+```text
+RTL
+```
+
+---
+
+# 14. لا تعتمد على static inspection فقط
+
+إذا كان التطبيق ما زال يظهر عربيًا لكن layout فعليًا LTR، فهذا يعني أن المشكلة لم تُحل.
+
+في هذه الحالة لا تقل:
+
+```text
+RTL fixed
+```
+
+بل تابع التشخيص حتى تعرف لماذا `I18nManager` لا ينعكس فعليًا على native layout.
+
+---
+
+# 15. التقرير النهائي
+
+بعد التنفيذ أعطني تقريرًا واضحًا يحتوي:
+
+### Root Cause
+
+ما السبب الحقيقي للمشكلة؟
+
+### Files Changed
+
+ما الملفات التي تم تعديلها؟
+
+### Architecture
+
+كيف أصبح Arabic → RTL و English → LTR؟
+
+### Language Switching
+
+هل يحتاج Reload؟ وكيف يتم؟
+
+### Validation
+
+نتائج:
+
+* TypeScript
+* ESLint
+* Web
+* Android
+* iOS
+* Diff check
+* RTL audit
+
+### Manual Test
+
+اذكر هل تم اختبار Expo Go فعليًا أم لا.
+
+### Important
+
+إذا لم يتم الاختبار اليدوي، اكتب بوضوح:
+
+```text
+Manual Expo Go verification: NOT YET COMPLETED
+```
+
+ولا تعتبر المهمة مكتملة.
+
+**نفّذ هذه المهمة فقط، ولا تبدأ أي feature جديدة.**
