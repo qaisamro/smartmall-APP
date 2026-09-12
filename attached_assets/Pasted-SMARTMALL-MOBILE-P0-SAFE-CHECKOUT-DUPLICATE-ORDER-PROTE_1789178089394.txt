@@ -1,0 +1,456 @@
+SMARTMALL MOBILE — P0 SAFE CHECKOUT & DUPLICATE ORDER PROTECTION
+
+IMPORTANT:
+This is a production-safety task.
+
+Do NOT start implementing immediately.
+
+You must first perform a READ-ONLY audit of the current mobile checkout implementation and the existing Laravel backend order APIs.
+
+The goal is to make mobile checkout safe, server-authoritative, retry-safe, and protected against duplicate/partial orders WITHOUT breaking the existing production website.
+
+==================================================
+PHASE 1 — READ-ONLY AUDIT
+==================================================
+
+Inspect:
+
+1. Mobile app:
+   artifacts/smartmall-mobile
+
+2. Backend:
+   services/smartmall-api
+
+3. Current mobile checkout files, hooks, API clients, cart store, order store, and order screens.
+
+4. Existing backend implementations for:
+   - POST /api/v1/orders/pending
+   - GET /api/v1/orders/pending/{id}
+   - POST /api/v1/orders/pending/{id}/confirm
+   - POST /api/v1/orders
+   - POST /api/v1/customer/orders
+   - GET /api/v1/customer/purchases
+   - GET /api/v1/customer/orders/{id}
+   - GET /api/v1/customer/orders/tracking
+
+5. Inspect the actual Laravel:
+   - Controllers
+   - Form Requests
+   - Validation rules
+   - Services
+   - Resources
+   - Models
+   - Database transactions
+   - Stock validation
+   - Price calculation
+   - Delivery calculation
+   - Order creation logic
+
+DO NOT assume the API contract.
+
+Read the actual backend code and determine exactly what fields and behavior are supported.
+
+==================================================
+AUDIT QUESTIONS
+==================================================
+
+Determine whether POST /customer/orders or the safest existing order endpoint supports:
+
+- one mall
+- multiple malls
+- products
+- quantities
+- server-side prices
+- server-side totals
+- stock validation
+- pickup
+- delivery
+- in-mall ordering
+- delivery address
+- delivery zone
+- delivery fee
+- customer notes
+- order notes
+- direct purchase
+- authenticated customer ownership
+- database transaction
+- duplicate protection
+- retry safety
+- idempotency key
+- existing order reconciliation
+
+Compare this with what the current mobile checkout sends.
+
+Create a clear report:
+
+CURRENT MOBILE FLOW:
+- endpoint
+- request payload
+- response
+- order creation sequence
+- confirmation sequence
+- retry behavior
+- failure behavior
+
+SAFE BACKEND FLOW:
+- endpoint
+- required payload
+- server-side calculations
+- transaction behavior
+- ownership checks
+- duplicate protection
+
+GAPS:
+- critical
+- high
+- medium
+- low
+
+DO NOT MODIFY ANY FILE DURING THIS PHASE.
+
+==================================================
+PHASE 2 — IMPLEMENT ONLY IF SAFE CONTRACT EXISTS
+==================================================
+
+If the existing backend already provides a safe server-authoritative customer order flow that supports the mobile requirements, migrate mobile checkout to that existing flow.
+
+DO NOT modify the backend unless a genuine contract gap is proven.
+
+The preferred behavior is:
+
+Customer selects cart items
+        ↓
+Mobile sends product IDs + quantities + required checkout data
+        ↓
+Backend validates authenticated customer
+        ↓
+Backend validates products and stock
+        ↓
+Backend calculates authoritative prices
+        ↓
+Backend calculates authoritative totals
+        ↓
+Backend calculates delivery/fees where applicable
+        ↓
+Backend creates order transactionally
+        ↓
+Mobile receives authoritative order result
+        ↓
+Mobile clears only successfully purchased cart items
+        ↓
+Mobile invalidates/refetches orders
+        ↓
+Navigate to order details/success
+
+NEVER trust client-provided:
+- unit prices
+- subtotal
+- total
+- delivery fee
+- discount amount
+- final order amount
+
+If the current API accepts those fields, they must NOT be treated as authoritative by the mobile client.
+
+==================================================
+DUPLICATE ORDER PROTECTION
+==================================================
+
+Implement client-side protection against accidental duplicate submissions.
+
+Requirements:
+
+1. Disable the checkout submit action while the request is actively processing.
+
+2. Prevent double taps.
+
+3. Generate a unique checkout attempt/idempotency identifier if the existing backend contract supports such a mechanism.
+
+4. If the backend does NOT support idempotency keys, DO NOT invent a fake backend contract.
+
+Instead:
+- inspect whether an existing safe reconciliation mechanism exists
+- prevent repeated submissions while the same checkout request is in flight
+- safely handle network timeout/retry
+- determine whether an order may already have been created before retrying
+
+5. NEVER blindly retry an order-creation request after a timeout if doing so could create a second order.
+
+6. If the backend returns an order ID successfully, treat that order as the source of truth.
+
+7. If the request times out after possible server processing, show a safe recovery state instead of automatically creating another order.
+
+Example recovery:
+
+"Your order may already have been submitted. Checking your orders..."
+
+Then query the customer's orders/reconciliation endpoint if the existing API supports this.
+
+==================================================
+MULTI-MALL CHECKOUT
+==================================================
+
+Inspect how the current cart handles products from multiple malls.
+
+If the backend requires one order per mall:
+
+- split the checkout safely
+- never create orders sequentially without recovery logic
+- record successful order IDs
+- record failed/pending attempts
+- do not lose successful orders
+- do not duplicate successful orders on retry
+- provide a clear recovery state to the user
+
+If the backend already supports multi-mall checkout transactionally:
+
+- use that existing behavior
+- do not recreate the logic on mobile
+
+DO NOT guess.
+
+==================================================
+CART USER ISOLATION
+==================================================
+
+Audit the current AsyncStorage/Zustand cart persistence.
+
+The cart must NOT leak between different authenticated users on the same device.
+
+Implement safe user scoping.
+
+Preferred behavior:
+
+user A login
+→ cart belongs to user A
+
+logout
+→ user A cart is cleared or safely detached
+
+user B login
+→ user B must never see user A cart
+
+If using persisted storage keys, ensure the authenticated user identity is part of the persistence strategy OR safely clear/reinitialize cart state on account changes.
+
+Also handle:
+- login
+- logout
+- token expiration
+- account switching
+- app restart
+
+Do not expose another user's cart.
+
+==================================================
+ORDER CACHE / STATE
+==================================================
+
+After successful order creation:
+
+- invalidate/refetch customer orders
+- invalidate relevant cart queries if applicable
+- update local cart only after confirmed successful order creation
+- do not clear the entire cart if only part of it was successfully ordered
+- preserve failed/unsubmitted items where appropriate
+
+Use the existing React Query/Zustand architecture.
+
+Do not introduce another state-management system.
+
+==================================================
+ERROR HANDLING
+==================================================
+
+Handle at minimum:
+
+- validation error
+- stock unavailable
+- product unavailable
+- authentication expiration
+- network timeout
+- server 500
+- delivery-zone failure
+- insufficient/invalid checkout data
+- duplicate submission
+- partial multi-mall failure
+
+The user must receive a clear Arabic/English localized message where the existing i18n architecture supports it.
+
+Do not expose raw backend exceptions to the user.
+
+==================================================
+UI / UX REQUIREMENTS
+==================================================
+
+PRESERVE the current checkout UI and UX.
+
+Do NOT redesign checkout.
+
+Do NOT change:
+- existing navigation structure
+- existing visual design
+- RTL architecture
+- English LTR behavior
+- Arabic RTL behavior
+- existing cart UI
+- existing order screens
+
+Only change the underlying checkout safety and state handling required for this task.
+
+==================================================
+STRICT FILE / ARCHITECTURE RULES
+==================================================
+
+DO NOT modify:
+
+- production website behavior
+- unrelated Laravel backend code
+- admin features
+- agent features
+- tracker features
+- owner features
+- notification system
+- push notification system
+- complaints
+- order tracking UI
+- profile features
+- search
+- mall browsing
+- home
+- scanner
+- RTL architecture
+
+Do NOT modify these protected RTL files unless absolutely required:
+- src/i18n/index.ts
+- app/_layout.tsx
+- app/(auth)/_layout.tsx
+- app/(customer)/_layout.tsx
+- app/(customer)/(tabs)/_layout.tsx
+
+DO NOT add dependencies unless absolutely necessary.
+
+Prefer existing dependencies and existing architecture.
+
+DO NOT modify API endpoints or backend contracts unless the audit proves that the existing safe contract cannot support the required mobile flow.
+
+If backend modification is truly required:
+STOP before implementing it and report:
+
+1. Why the existing API is insufficient
+2. Exact backend contract gap
+3. Exact proposed backend change
+4. Security implications
+5. Database implications
+6. Whether the production website could be affected
+
+Wait for explicit approval before changing production backend behavior.
+
+==================================================
+PHASE 3 — VALIDATION
+==================================================
+
+After implementation run:
+
+1. TypeScript/typecheck
+2. Android Expo export/build validation
+3. Expo configuration validation
+4. git diff --check
+5. inspect git diff
+6. verify no unrelated files changed
+7. verify no backend files changed unless explicitly approved
+8. verify no new dependency was added
+9. verify no RTL architecture changes
+10. verify no production website changes
+
+Search the final diff for accidental:
+- console debugging
+- hardcoded production test data
+- client-authoritative totals
+- duplicate order creation
+- unsafe retry logic
+- broad cart clearing
+- unrelated UI changes
+
+==================================================
+PHASE 4 — MANUAL TEST
+==================================================
+
+Do NOT claim checkout is complete until manually tested on Android Development Build.
+
+Test at minimum:
+
+A. Normal checkout
+- add product
+- checkout
+- verify exactly one order
+- verify server-returned order details
+- verify cart behavior
+- verify order appears in Orders
+
+B. Double tap
+- rapidly press checkout multiple times
+- verify only one order is created
+
+C. Network interruption
+- interrupt/disable network around checkout
+- verify the app does NOT blindly create another order after timeout
+
+D. Stock/product failure
+- verify safe error state
+- verify cart is not incorrectly destroyed
+
+E. Logout/login isolation
+- user A cart
+- logout
+- user B login
+- verify user A cart cannot appear
+
+F. Arabic RTL
+- checkout flow
+- error state
+- success state
+
+G. English LTR
+- checkout flow
+- error state
+- success state
+
+IMPORTANT:
+Do not create uncontrolled production orders merely to claim testing.
+
+If there is no safe disposable/staging test account or controlled test path, report the manual production-order test as BLOCKED instead of fabricating success.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Return exactly:
+
+1. AUDIT RESULT
+2. IMPLEMENTATION RESULT
+3. FILES CHANGED
+4. BACKEND FILES CHANGED
+5. DEPENDENCIES CHANGED
+6. CHECKOUT ENDPOINT NOW USED
+7. SERVER-AUTHORITATIVE TOTALS: YES/NO
+8. DUPLICATE PROTECTION: YES/NO
+9. MULTI-MALL SAFETY: YES/NO/PARTIAL
+10. CART USER ISOLATION: YES/NO
+11. VALIDATION RESULTS
+12. MANUAL ANDROID TEST RESULTS
+13. BLOCKERS
+14. REMAINING P0 RISKS
+
+IMPORTANT:
+Do not continue to P1.
+
+Do not implement:
+- complaints
+- push notifications
+- deep links
+- order tracking
+- direct purchase
+- profile enhancements
+- Phase 6 Step 3
+
+STOP after this P0 task.
