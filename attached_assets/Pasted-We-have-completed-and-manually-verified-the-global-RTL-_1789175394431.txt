@@ -1,0 +1,354 @@
+We have completed and manually verified the global RTL/LTR architecture on a real Android device.
+
+Now start:
+
+# Phase 6 — Step 1: Performance Audit
+
+IMPORTANT:
+This phase is AUDIT ONLY.
+Do NOT modify production code yet.
+Do NOT modify Laravel/backend.
+Do NOT modify the existing website.
+Do NOT change API contracts.
+Do NOT add new dependencies.
+Do NOT redesign UI.
+Do NOT refactor unrelated code.
+
+The goal is to inspect the existing standalone Expo React Native mobile app and produce a precise performance report before making any changes.
+
+## Project
+
+Mobile app:
+`artifacts/smartmall-mobile`
+
+API:
+`https://samrtmall.cloud/api/v1`
+
+The app is a standalone Expo/React Native application.
+
+## Audit Scope
+
+Inspect the following main user flows:
+
+1. App startup
+2. Authentication
+3. Home
+4. Malls
+5. Global Search
+6. Mall Details
+7. Product Details
+8. Product Images
+9. Cart
+10. Checkout
+11. Orders
+12. QR Scanner
+13. Notifications
+14. Profile / Account
+15. Arabic RTL
+16. English LTR
+
+## Check Specifically
+
+### 1. Bundle / JavaScript
+
+Inspect:
+
+* Expo bundle size
+* large imports
+* unnecessary dependencies
+* duplicate libraries
+* heavy libraries loaded globally
+* components that should be lazy-loaded
+* screens that can use dynamic imports where appropriate
+
+Do NOT remove a dependency just because it is large.
+Only report actionable issues.
+
+### 2. Startup Performance
+
+Inspect:
+
+* root layout
+* providers
+* authentication initialization
+* i18n initialization
+* RTL initialization
+* React Query initialization
+* Zustand initialization
+* SecureStore reads
+* notification initialization
+* unnecessary startup API calls
+
+Determine which operations block the first screen.
+
+### 3. Home Screen
+
+Inspect:
+
+* API requests
+* React Query configuration
+* re-renders
+* image loading
+* FlatList / ScrollView usage
+* unnecessary computations
+* duplicated requests
+* cache configuration
+
+Pay special attention to large product/mall sections.
+
+### 4. Malls
+
+Inspect:
+
+* mall list rendering
+* pagination/infinite query
+* search
+* category/type filters
+* images
+* unnecessary re-renders
+* query invalidation
+
+### 5. Search
+
+Inspect:
+
+* debounce implementation
+* AbortSignal/cancellation
+* API request frequency
+* query caching
+* rendering grouped results
+* unnecessary requests for short queries
+
+Do NOT remove the existing debounce or cancellation unless there is a proven issue.
+
+### 6. Mall Details / Product Catalog
+
+Inspect:
+
+* infinite pagination
+* product rendering
+* image loading
+* filters
+* section loading
+* repeated API requests
+* unnecessary parent re-renders
+
+### 7. Product Details
+
+Inspect:
+
+* image loading
+* API calls
+* cache usage
+* cart interactions
+* expensive rendering
+
+### 8. Cart / Checkout / Orders
+
+Inspect:
+
+* unnecessary API requests
+* duplicated queries
+* cache invalidation
+* screen transitions
+* expensive calculations
+
+Do NOT modify the existing production order flow.
+
+The current production order flow must remain:
+
+`/orders/pending`
+
+then:
+
+`/orders/pending/{id}/confirm`
+
+### 9. QR Scanner
+
+Inspect:
+
+* camera initialization
+* scanner lifecycle
+* whether camera remains active unnecessarily
+* navigation behavior
+* repeated scans
+* memory/resource cleanup
+
+### 10. Notifications
+
+Inspect:
+
+* initialization timing
+* listeners
+* cleanup
+* duplicate listeners
+* notification-related startup cost
+* deep-link handling
+
+### 11. Images
+
+Audit image usage across the application.
+
+Look for:
+
+* unnecessarily large remote images
+* missing dimensions
+* repeated image downloads
+* images loaded before needed
+* missing caching strategy
+* oversized images in lists
+
+Do NOT change image URLs or backend image behavior.
+
+### 12. React Rendering
+
+Look for:
+
+* unnecessary re-renders
+* missing memoization where clearly beneficial
+* unstable callbacks
+* unstable objects/arrays
+* context causing broad re-renders
+* expensive components inside lists
+
+Do NOT blindly add `React.memo`, `useMemo`, or `useCallback`.
+Only report cases where profiling/code inspection indicates a meaningful benefit.
+
+### 13. React Query
+
+Audit:
+
+* staleTime
+* gcTime
+* refetch behavior
+* duplicate queries
+* unnecessary invalidations
+* queries that refetch when returning to a screen
+* infinite query configuration
+
+Do NOT globally change caching defaults without evidence.
+
+### 14. Navigation
+
+Inspect Expo Router navigation:
+
+* unnecessary screen mounting
+* screens that remain mounted unnecessarily
+* expensive navigation transitions
+* tab behavior
+* nested layouts
+
+Preserve the current bottom navigation exactly:
+
+Home / Malls / Offers / Orders / Profile
+
+Do NOT reorder it.
+
+### 15. RTL / LTR
+
+Verify that performance changes will NOT affect:
+
+* Arabic RTL
+* English LTR
+* I18nManager
+* language switching
+* native navigation direction
+
+Do NOT modify RTL implementation during this audit.
+
+## Required Output
+
+Do NOT implement fixes yet.
+
+Return a structured report containing:
+
+### A. Overall Performance Assessment
+
+Rate:
+
+* Startup
+* Home
+* Malls
+* Search
+* Mall Details
+* Product Details
+* Cart
+* Checkout
+* Orders
+* QR Scanner
+* Notifications
+* Profile
+
+Use:
+
+GOOD / NEEDS ATTENTION / HIGH PRIORITY
+
+### B. Top 10 Performance Issues
+
+For every issue provide:
+
+1. Priority
+2. File/path
+3. Problem
+4. Why it matters
+5. Recommended fix
+6. Estimated impact
+7. Risk of changing it
+
+### C. Quick Wins
+
+List improvements that are:
+
+* low risk
+* isolated
+* measurable
+* do not require backend changes
+
+### D. Larger Improvements
+
+List improvements that require more architectural work.
+
+Do NOT implement them.
+
+### E. No-Change Areas
+
+Explicitly identify areas that are already good and should NOT be touched.
+
+### F. Backend Dependency
+
+Clearly state whether any performance issue actually requires a Laravel/backend change.
+
+If none is required, say:
+
+"Backend changes are NOT required for the recommended mobile optimizations."
+
+### G. Recommended Implementation Order
+
+Provide:
+
+Phase 6 Step 2
+Phase 6 Step 3
+Phase 6 Step 4
+
+with a short description of each.
+
+## Validation
+
+Before returning the report:
+
+* run TypeScript/typecheck
+* run ESLint if available
+* verify Expo configuration
+* inspect git diff
+* confirm there are NO source-code changes from this audit
+* confirm no backend files changed
+* confirm no website files changed
+* confirm no dependency changes
+
+At the end report:
+
+`AUDIT ONLY — NO CODE CHANGES`
+
+Do not start Step 2 automatically.
+
+Wait for approval before implementing any performance fixes.
