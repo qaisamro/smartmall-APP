@@ -1,0 +1,498 @@
+## عاجل: RTL ما زال لا يعمل فعليًا على Android — لا تكتفِ بالـ static validation
+
+المشكلة لم تُحل.
+
+بعد آخر إصلاح، قمت بتشغيل التطبيق فعليًا على Android عبر Expo Go، والنتيجة:
+
+> عند اختيار العربية، النصوص تصبح عربية لكن **واجهة التطبيق بالكامل ما زالت LTR**.
+
+أي أن المشكلة ما زالت موجودة فعليًا على الجهاز رغم أن التقرير السابق قال إن:
+
+```text
+I18nManager.isRTL === true
+```
+
+لذلك لا أريد تقريرًا نظريًا أو إعادة نفس الإصلاح.
+
+أريد منك الآن **تشخيص السلوك الفعلي على Android ثم إصلاح السبب الحقيقي**.
+
+---
+
+# 1. لا تعدّل الشاشات الآن
+
+ممنوع في هذه المهمة:
+
+* إضافة `row-reverse` لكل شاشة
+* إضافة `flexDirection` يدويًا لعشرات المكونات
+* نسخ `isRTL` داخل كل component
+* تعديل APIs
+* تعديل Laravel
+* تعديل website
+* تعديل business logic
+
+المشكلة Global RTL.
+
+---
+
+# 2. افحص أولًا التنفيذ الحالي حرفيًا
+
+افتح:
+
+```text
+artifacts/smartmall-mobile/src/i18n/index.ts
+artifacts/smartmall-mobile/app/_layout.tsx
+artifacts/smartmall-mobile/app/(customer)/_layout.tsx
+artifacts/smartmall-mobile/app/(customer)/(tabs)/_layout.tsx
+```
+
+وابحث عن كل استخدام لـ:
+
+```text
+I18nManager
+forceRTL
+allowRTL
+isRTL
+reloadAsync
+Updates.reloadAsync
+```
+
+ثم حدد:
+
+### A
+
+ما قيمة:
+
+```text
+I18nManager.isRTL
+```
+
+فعليًا أثناء تشغيل Android؟
+
+### B
+
+ما قيمة اللغة الحالية فعليًا؟
+
+### C
+
+هل `forceRTL(true)` يتم تنفيذه فعلًا عند اختيار العربية؟
+
+### D
+
+هل يتم استدعاء Reload بعد تغيير الاتجاه؟
+
+### E
+
+هل Reload يحدث قبل حفظ اللغة أم بعدها؟
+
+### F
+
+عند إعادة تشغيل التطبيق بالكامل، هل اللغة المحفوظة هي Arabic وهل يتم تنفيذ `forceRTL(true)` قبل إنشاء واجهة التطبيق؟
+
+---
+
+# 3. أضف Debug مؤقت فقط
+
+أريد Debug واضحًا أثناء startup وعلى language switch.
+
+مثال:
+
+```text
+[RTL DEBUG]
+language: ar
+I18nManager.isRTL: true/false
+expectedRTL: true
+```
+
+وعند English:
+
+```text
+[RTL DEBUG]
+language: en
+I18nManager.isRTL: true/false
+expectedRTL: false
+```
+
+وأيضًا اطبع:
+
+```text
+[RTL DEBUG] platform: android
+[RTL DEBUG] startup
+[RTL DEBUG] language switch
+[RTL DEBUG] reload requested
+```
+
+لا تترك debug بشكل مزعج في production بعد الانتهاء؛ استخدمه مؤقتًا أو اجعله مناسبًا للـdevelopment فقط.
+
+---
+
+# 4. اختبر حالة Android الحقيقية
+
+أريد التحقق من هذه الحالات بالترتيب:
+
+### الحالة 1
+
+Android يبدأ والتطبيق محفوظ على:
+
+```text
+English
+```
+
+النتيجة المطلوبة:
+
+```text
+I18nManager.isRTL = false
+UI = LTR
+```
+
+### الحالة 2
+
+غيّر:
+
+```text
+English → Arabic
+```
+
+النتيجة:
+
+```text
+language = ar
+expectedRTL = true
+I18nManager.isRTL = true
+UI = RTL
+```
+
+### الحالة 3
+
+أغلق التطبيق بالكامل.
+
+ثم افتحه من جديد.
+
+إذا كانت اللغة المحفوظة:
+
+```text
+Arabic
+```
+
+يجب أن يبدأ التطبيق مباشرة باتجاه RTL.
+
+هذه الحالة مهمة جدًا.
+
+### الحالة 4
+
+غيّر:
+
+```text
+Arabic → English
+```
+
+ثم:
+
+```text
+I18nManager.isRTL = false
+UI = LTR
+```
+
+### الحالة 5
+
+أغلق التطبيق وافتحه من جديد.
+
+إذا كانت English محفوظة:
+
+```text
+I18nManager.isRTL = false
+UI = LTR
+```
+
+---
+
+# 5. انتبه إلى React Native limitation
+
+تحقق من نقطة مهمة جدًا:
+
+`I18nManager.forceRTL()` لا يعني بالضرورة أن الـnative hierarchy الموجودة حاليًا ستنعكس فورًا.
+
+قد يحتاج التطبيق إلى **إعادة تشغيل / reload كامل** بعد تغيير الاتجاه.
+
+إذا كان هذا هو السبب، نفّذ architecture صحيحة:
+
+```text
+Change Language
+      ↓
+Save language
+      ↓
+Set I18nManager direction
+      ↓
+Full reload/restart
+      ↓
+Read saved language
+      ↓
+Render app
+```
+
+وليس:
+
+```text
+Change Language
+      ↓
+Render Arabic
+      ↓
+forceRTL
+      ↓
+hope UI changes
+```
+
+---
+
+# 6. افحص هل Expo Go هو سبب الاختبار
+
+تحقق هل استخدام:
+
+```text
+Expo Go
+```
+
+يمكن أن يؤثر على اختبار `I18nManager` / native reload في هذه الحالة.
+
+إذا كان هناك فرق بين:
+
+```text
+Expo Go
+```
+
+و:
+
+```text
+development build
+```
+
+وضح ذلك صراحة.
+
+لا تفترض أن نجاح production bundle يعني أن RTL يعمل فعليًا.
+
+---
+
+# 7. مهم جدًا: Root View
+
+تحقق من الـroot hierarchy الحالية.
+
+لدينا:
+
+```text
+SafeAreaProvider
+GestureHandlerRootView
+```
+
+تأكد أن الـdirection الذي تمت إضافته فعليًا يصل إلى الـnative hierarchy.
+
+لكن لا تستخدم root `direction` كحل شكلي يخفي مشكلة `I18nManager`.
+
+أريد الاثنين متوافقين:
+
+```text
+I18nManager
++
+Root direction
+```
+
+---
+
+# 8. تحقق من Android persistence
+
+إذا كان التطبيق يحفظ اللغة باستخدام AsyncStorage أو أي storage آخر:
+
+تحقق من التسلسل:
+
+```text
+saved language
+      ↓
+i18n initialization
+      ↓
+I18nManager direction
+      ↓
+root render
+```
+
+لا تسمح بأن يحدث:
+
+```text
+root render
+      ↓
+Arabic loaded later
+      ↓
+RTL attempted too late
+```
+
+لأن هذا قد يفسر لماذا يظهر التطبيق LTR رغم أن `isRTL` يصبح true لاحقًا.
+
+---
+
+# 9. لا تعتبر `isRTL === true` وحدها نجاحًا
+
+هذا مهم جدًا.
+
+قد تكون:
+
+```text
+I18nManager.isRTL === true
+```
+
+لكن UI الموجود بالفعل بقي LTR لأن الاتجاه تم تغييره بعد إنشاء native hierarchy.
+
+لذلك النجاح الحقيقي هو:
+
+```text
+Arabic selected
++
+I18nManager correct
++
+reload/restart correct
++
+actual Android UI RTL
+```
+
+---
+
+# 10. تحقق من Bottom Tabs
+
+بعد إصلاح الـglobal direction، اختبر:
+
+```text
+Home
+Malls
+Offers
+Orders
+Profile
+```
+
+لا تغيّر ترتيب الـroutes أو business logic.
+
+أريد فقط أن يتعامل الـnavigation مع RTL بشكل صحيح.
+
+---
+
+# 11. إذا وجدت أن Expo Go غير كافٍ
+
+إذا كان السبب أن Expo Go لا يعكس `I18nManager` بشكل موثوق في هذا السيناريو، لا تعمل workaround داخل الشاشات.
+
+أوقف التنفيذ واذكر:
+
+```text
+Expo Go limitation detected
+```
+
+ثم وضح هل نحتاج:
+
+```text
+Expo Development Build
+```
+
+للاختبار الحقيقي.
+
+لكن لا تغير المشروع إلى development build أو تعدل dependencies دون توضيح السبب أولًا.
+
+---
+
+# 12. Validation المطلوب
+
+بعد إصلاح السبب:
+
+### Static
+
+* TypeScript
+* ESLint
+* Expo export
+* Android bundle
+* iOS bundle
+* git diff --check
+* no dependency changes
+* no row-reverse hacks
+
+### Runtime
+
+يجب اختبار Android فعليًا.
+
+لا أريد:
+
+```text
+Preview smoke test only
+```
+
+ولا:
+
+```text
+Build passed
+```
+
+فقط.
+
+---
+
+# 13. النتيجة التي أريدها
+
+أريد أن يصبح هذا صحيحًا فعليًا:
+
+```text
+English
+→ LTR
+
+Arabic
+→ RTL
+```
+
+على Android.
+
+وعند إغلاق التطبيق وفتحه من جديد:
+
+```text
+Saved Arabic
+→ App starts RTL
+
+Saved English
+→ App starts LTR
+```
+
+---
+
+# 14. التقرير النهائي
+
+أعطني:
+
+### Root Cause
+
+لماذا كان التطبيق يبقى LTR فعليًا؟
+
+### Runtime Debug
+
+القيم الفعلية لـ:
+
+```text
+language
+I18nManager.isRTL
+expectedRTL
+platform
+reload
+```
+
+### Files Changed
+
+اذكر الملفات فقط.
+
+### Actual Android Result
+
+هل Android UI أصبح RTL فعلًا؟
+
+### Expo Go
+
+هل تم الاختبار في Expo Go؟ وهل هناك limitation؟
+
+### Final Status
+
+إذا لم يتم إصلاح RTL فعليًا، لا تكتب "Fixed".
+
+اكتب:
+
+```text
+RTL runtime verification: FAILED
+```
+
+ولا تنتقل إلى أي feature أخرى حتى يتم حل هذه المشكلة.
