@@ -1,0 +1,630 @@
+# SMARTMALL — PRODUCTION ROOT-CAUSE INVESTIGATION
+
+## READ-ONLY — NO DEPLOYMENT — NO MIGRATION — NO CODE CHANGES
+
+You are investigating the SmartMall production backend synchronization problem.
+
+### CRITICAL SAFETY RULE
+
+This is a READ-ONLY investigation.
+
+You MUST NOT:
+
+* modify any source code
+* modify frontend code
+* modify mobile code
+* modify backend code
+* modify `.env`
+* modify configuration
+* run database migrations
+* run `php artisan migrate`
+* run `php artisan migrate:fresh`
+* run seeders
+* modify production database data
+* create/update/delete orders
+* create test users in production
+* deploy anything
+* push commits
+* change DNS
+* change Hostinger settings
+* restart production services
+* clear production caches
+* change routes
+* change CORS
+* change authentication
+* switch mobile endpoints
+* modify the website checkout
+
+Do NOT attempt a "fix".
+
+The ONLY goal is to determine, with evidence, why production differs from the repository.
+
+---
+
+# 1. INVESTIGATION TARGET
+
+Production:
+
+`https://samrtmall.cloud`
+
+Production API:
+
+`https://samrtmall.cloud/api/v1`
+
+Repository:
+
+`services/smartmall-api`
+
+Relevant applications:
+
+* `artifacts/smartmall`
+* `artifacts/smartmall-mobile`
+
+Known production observations:
+
+* `/api/v1/malls` → HTTP 200
+* `/api/v1/offers` → HTTP 200
+* `/api/v1/customer/orders` → HTTP 404
+* `/api/v1/customer/purchases` → HTTP 500
+* `/api/v1/customer/orders/tracking` → HTTP 500
+* `/api/v1/customer/orders/1` → HTTP 500
+
+Known repository safe route:
+
+`POST /api/v1/customer/orders`
+
+Known repository customer routes:
+
+`GET /api/v1/customer/purchases`
+
+`GET /api/v1/customer/orders/tracking`
+
+`GET /api/v1/customer/orders/{id}`
+
+---
+
+# 2. FIRST: DETERMINE THE ACTUAL PRODUCTION DEPLOYMENT SOURCE
+
+Investigate the repository and any available project/environment metadata.
+
+Determine whether production is actually deployed from:
+
+* GitHub
+* Replit
+* Hostinger File Manager
+* Hostinger Git deployment
+* SSH deployment
+* FTP/SFTP
+* Railway
+* another server
+* another repository
+* another branch
+* another Laravel application directory
+
+Look for:
+
+* deployment configuration
+* `.github/workflows`
+* Docker configuration
+* Railway configuration
+* Hostinger configuration
+* deployment scripts
+* README deployment instructions
+* environment-specific files
+* Git remotes
+* branch mappings
+* deployment manifests
+* server/document-root references
+
+DO NOT execute deployment commands.
+
+### Required conclusion:
+
+State:
+
+`PRODUCTION DEPLOYMENT SOURCE: CONFIRMED / UNKNOWN`
+
+If confirmed, provide evidence.
+
+If unknown, clearly state exactly what evidence is missing.
+
+---
+
+# 3. DETERMINE WHETHER PRODUCTION CODE CAN BE IDENTIFIED
+
+Compare repository history around the safe checkout implementation.
+
+Known commit:
+
+`61ac805`
+
+Message:
+
+`Implement full-stack order checkout functionality and API integration`
+
+Determine:
+
+* when `/customer/orders` was introduced
+* which files introduced it
+* whether there are later modifications
+* whether legacy customer routes existed before it
+* whether route definitions changed
+* whether controller methods changed
+* whether middleware changed
+
+Do NOT assume production is an older commit.
+
+The goal is to determine whether there is actual evidence.
+
+### Required output:
+
+Create this table:
+
+| Evidence                    | Repository | Production | Confidence |
+| --------------------------- | ---------- | ---------- | ---------- |
+| Safe route exists           |            |            |            |
+| Customer purchases route    |            |            |            |
+| Customer tracking route     |            |            |            |
+| Customer order detail route |            |            |            |
+| Legacy pending routes       |            |            |            |
+| Safe controller             |            |            |            |
+| Idempotency migration       |            |            |            |
+
+---
+
+# 4. INVESTIGATE THE 404
+
+Investigate specifically:
+
+`GET /api/v1/customer/orders`
+
+Also inspect behavior of:
+
+`POST /api/v1/customer/orders`
+
+IMPORTANT:
+
+Do NOT create an order.
+
+Do NOT send a real order payload.
+
+If unauthenticated POST testing is safe and non-mutating in the framework, you may perform a minimal validation-only request ONLY if you can prove it cannot create data.
+
+Otherwise do not perform it.
+
+Determine whether the 404 is caused by:
+
+* route not registered
+* wrong application
+* wrong document root
+* old production code
+* wrong branch
+* stale route cache
+* API prefix mismatch
+* deployment drift
+* reverse proxy behavior
+* another Laravel application
+* another cause
+
+Do not select a cause without evidence.
+
+### Required conclusion:
+
+`404 ROOT CAUSE: CONFIRMED / PROBABLE / UNKNOWN`
+
+Explain why.
+
+---
+
+# 5. INVESTIGATE THE THREE 500 RESPONSES
+
+Investigate:
+
+`GET /api/v1/customer/purchases`
+
+`GET /api/v1/customer/orders/tracking`
+
+`GET /api/v1/customer/orders/1`
+
+No authentication credentials are available.
+
+Do NOT create credentials.
+
+Do NOT create users.
+
+Do NOT modify production.
+
+Determine whether these 500 responses are likely caused by:
+
+* route/controller mismatch
+* database schema mismatch
+* missing migration
+* authentication middleware problem
+* Laravel exception
+* model mismatch
+* missing table/column
+* route cache
+* wrong application
+* wrong deployment
+* PHP/runtime mismatch
+* other backend exception
+
+Use repository evidence and any SAFE production information available.
+
+If logs are accessible without modifying production, inspect them READ-ONLY.
+
+If logs are not accessible, explicitly say:
+
+`PRODUCTION LOG ACCESS: NOT AVAILABLE`
+
+Do not guess the exception.
+
+### Required conclusion:
+
+For each endpoint:
+
+| Endpoint                    | Status | Most likely cause | Evidence | Confidence |
+| --------------------------- | -----: | ----------------- | -------- | ---------- |
+| `/customer/purchases`       |    500 |                   |          |            |
+| `/customer/orders/tracking` |    500 |                   |          |            |
+| `/customer/orders/1`        |    500 |                   |          |            |
+
+---
+
+# 6. CHECK PRODUCTION DATABASE COMPATIBILITY — READ ONLY ONLY
+
+If and ONLY if a legitimate READ-ONLY production database inspection mechanism is already available in the environment, inspect schema metadata.
+
+DO NOT connect using guessed credentials.
+
+DO NOT ask for or expose passwords.
+
+DO NOT modify anything.
+
+Check only:
+
+### `orders`
+
+Does it contain:
+
+* `user_id`
+* `client_request_id`
+
+Check whether this unique index exists:
+
+`orders_user_client_request_unique`
+
+Check migration state for:
+
+`2026_09_10_000001_add_client_request_id_to_orders_table.php`
+
+Also verify whether the existing `orders` table structure is compatible with the repository model.
+
+If production DB access is unavailable, state:
+
+`PRODUCTION DATABASE SCHEMA: NOT DIRECTLY VERIFIABLE`
+
+Do not infer the schema from HTTP behavior.
+
+---
+
+# 7. CHECK ROUTE REGISTRATION LOCALLY
+
+Inspect:
+
+`services/smartmall-api/routes/api.php`
+
+Report the exact registration of:
+
+* `/customer/orders`
+* `/customer/purchases`
+* `/customer/orders/tracking`
+* `/customer/orders/{id}`
+* `/orders/pending`
+* `/orders/pending/{id}/confirm`
+
+Also identify:
+
+* middleware
+* controller
+* route prefix
+* API version prefix
+
+Do not modify anything.
+
+---
+
+# 8. CHECK FOR ROUTE CACHE / CONFIG CACHE RISK
+
+Determine whether the repository or deployment process uses:
+
+* `route:cache`
+* `config:cache`
+* `optimize`
+* cached bootstrap files
+* deployment scripts that may preserve stale routes
+
+Do not clear caches.
+
+Do not rebuild caches.
+
+Only identify whether stale cache is technically plausible.
+
+Report:
+
+`ROUTE CACHE CAUSE: CONFIRMED / POSSIBLE / NOT SUPPORTED`
+
+---
+
+# 9. CHECK HOSTINGER / RAILWAY MISMATCH
+
+The production response currently identifies Hostinger:
+
+* `server: hcdn`
+* `platform: hostinger`
+* `panel: hpanel`
+* `x-powered-by: PHP/8.3.33`
+
+The repository contains:
+
+`services/smartmall-api/railway.json`
+
+and:
+
+`services/smartmall-api/Dockerfile`
+
+Determine whether there is any actual evidence connecting the current production site to Railway.
+
+Do NOT deploy to Railway.
+
+Do NOT deploy to Hostinger.
+
+Do NOT change configuration.
+
+Required conclusion:
+
+`HOSTINGER ↔ REPOSITORY CONNECTION: CONFIRMED / NOT CONFIRMED`
+
+and:
+
+`RAILWAY ↔ PRODUCTION CONNECTION: CONFIRMED / NOT CONFIRMED`
+
+---
+
+# 10. CHECK WHETHER WEBSITE DEPENDS ON LEGACY CHECKOUT
+
+Inspect:
+
+`artifacts/smartmall/src/pages/Cart.jsx`
+
+Confirm the actual production website checkout dependency on:
+
+`POST /orders/pending`
+
+and:
+
+`POST /orders/pending/{id}/confirm`
+
+Also inspect any QR/direct-purchase flow that depends on the pending-order system.
+
+DO NOT modify it.
+
+Required conclusion:
+
+`LEGACY CHECKOUT DEPENDENCY: CONFIRMED / NOT CONFIRMED`
+
+---
+
+# 11. CHECK MOBILE CHECKOUT DEPENDENCY
+
+Inspect:
+
+`artifacts/smartmall-mobile/app/(customer)/checkout.tsx`
+
+Confirm whether mobile currently uses:
+
+`POST /orders/pending`
+
+and:
+
+`POST /orders/pending/{id}/confirm`
+
+Do NOT change the mobile code.
+
+Required conclusion:
+
+`MOBILE LEGACY CHECKOUT DEPENDENCY: CONFIRMED / NOT CONFIRMED`
+
+---
+
+# 12. CHECK SAFE CHECKOUT CONTRACT GAPS
+
+Inspect the current local safe endpoint.
+
+Document exactly how it handles:
+
+* mall_id
+* product_id
+* quantity
+* price
+* subtotal
+* total
+* stock
+* delivery_method
+* delivery_address
+* delivery_phone
+* phone
+* delivery_zone_id
+* delivery_fee
+* general_notes
+* idempotency_key
+* multi-mall checkout
+
+Do not change the implementation.
+
+Specifically determine whether the safe endpoint reproduces the current website's delivery-zone and delivery-fee behavior.
+
+Required conclusion:
+
+`SAFE CHECKOUT CONTRACT: READY / REQUIRES BACKEND ALIGNMENT`
+
+Explain precisely what is missing.
+
+---
+
+# 13. DO NOT FIX ANYTHING
+
+This is critical.
+
+Even if you discover an obvious bug:
+
+DO NOT fix it.
+
+Even if you discover the exact production issue:
+
+DO NOT deploy a fix.
+
+Even if a migration is missing:
+
+DO NOT run it.
+
+Even if route cache is stale:
+
+DO NOT clear it.
+
+Even if production is using the wrong directory:
+
+DO NOT change it.
+
+Only report the evidence and recommended next action.
+
+---
+
+# 14. FINAL ROOT-CAUSE REPORT
+
+End the investigation with this exact structure:
+
+## PRODUCTION ROOT-CAUSE REPORT
+
+### A. Production deployment source
+
+`CONFIRMED / UNKNOWN`
+
+Evidence:
+
+...
+
+### B. Production application identity
+
+`CONFIRMED / UNKNOWN`
+
+Evidence:
+
+...
+
+### C. 404 `/customer/orders`
+
+`CONFIRMED / PROBABLE / UNKNOWN`
+
+Root cause:
+
+...
+
+Evidence:
+
+...
+
+### D. 500 customer endpoints
+
+`CONFIRMED / PROBABLE / UNKNOWN`
+
+Findings:
+
+...
+
+### E. Production database
+
+`VERIFIED / NOT VERIFIED`
+
+Schema:
+
+...
+
+### F. Route/cache status
+
+...
+
+### G. Website legacy checkout
+
+`SAFE TO LEAVE UNCHANGED`
+
+Evidence:
+
+...
+
+### H. Mobile checkout
+
+`MUST REMAIN ON LEGACY FLOW FOR NOW`
+
+Reason:
+
+...
+
+### I. Safe checkout readiness
+
+`READY / NOT READY`
+
+Blocking issues:
+
+1.
+2.
+3.
+
+### J. Recommended next step
+
+Give ONE next step only.
+
+Do not provide multiple competing actions.
+
+---
+
+# 15. FINAL STATUS
+
+Choose exactly one:
+
+`ROOT CAUSE CONFIRMED`
+
+or
+
+`ROOT CAUSE PARTIALLY CONFIRMED — HOSTINGER VERIFICATION REQUIRED`
+
+or
+
+`ROOT CAUSE UNKNOWN — PRODUCTION ACCESS REQUIRED`
+
+or
+
+`NO ROOT CAUSE FOUND — FURTHER READ-ONLY EVIDENCE REQUIRED`
+
+Also provide:
+
+* confidence percentage
+* exact evidence supporting the conclusion
+* what remains unknown
+* whether deployment is safe to consider yet
+
+### ABSOLUTE RULE
+
+Do not deploy.
+
+Do not migrate.
+
+Do not modify.
+
+Do not commit.
+
+Do not push.
+
+Do not change production.
+
+This task ends with a READ-ONLY investigation report only.
