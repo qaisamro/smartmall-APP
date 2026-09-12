@@ -1,0 +1,647 @@
+# SmartMall Mobile — Full Feature Gap Analysis
+
+We need to perform a comprehensive **feature parity audit** between the existing production SmartMall system and the new standalone React Native / Expo mobile application.
+
+This is an **AUDIT FIRST** task.
+
+Do NOT start implementing missing features immediately.
+
+The goal is to discover exactly:
+
+1. What functionality currently exists in the production website.
+2. What functionality exists in the Laravel backend/API.
+3. What functionality exists in the old/current GitHub codebase.
+4. What functionality already exists in the new React Native mobile app.
+5. What functionality is missing from the mobile app.
+6. Which missing functionality should actually be added to the mobile app.
+7. Which functionality is intentionally web/admin-only and should NOT be added to the mobile app.
+
+---
+
+# PRODUCTION SYSTEM
+
+Production website:
+
+https://samrtmall.cloud
+
+Production API:
+
+https://samrtmall.cloud/api/v1
+
+GitHub repository:
+
+qaisamro/smartmall
+
+The repository contains the existing web application, Laravel backend, API, and the new standalone mobile application.
+
+The mobile application is located under:
+
+`artifacts/smartmall-mobile`
+
+---
+
+# CRITICAL RULE
+
+DO NOT MODIFY CODE DURING THIS AUDIT.
+
+This task is:
+
+**READ → INSPECT → COMPARE → DOCUMENT**
+
+Only.
+
+No feature implementation.
+
+No backend modifications.
+
+No frontend modifications.
+
+No dependency changes.
+
+No API changes.
+
+No database changes.
+
+No RTL changes.
+
+No navigation changes.
+
+No refactoring.
+
+---
+
+# STEP 1 — AUDIT THE EXISTING WEBSITE
+
+Inspect the existing production/web implementation in the repository.
+
+Identify all customer-facing functionality.
+
+Do NOT only look at visible screens.
+
+Inspect:
+
+* routes
+* pages
+* components
+* hooks
+* services
+* API clients
+* forms
+* dialogs
+* modals
+* actions
+* permissions
+* authentication flows
+* customer features
+* agent features
+* shopping functionality
+* order functionality
+* account functionality
+* notifications
+* QR functionality
+* search
+* filters
+* favorites
+* promotions
+* offers
+* malls
+* products
+* sections
+* categories
+* services
+* cards
+* payments
+* delivery
+* profile
+* support/contact functionality
+* settings
+* language
+* localization
+* any other customer-facing functionality
+
+Separate:
+
+### CUSTOMER FEATURES
+
+from
+
+### AGENT FEATURES
+
+from
+
+### ADMIN FEATURES
+
+Do not assume everything in the website belongs in the mobile application.
+
+---
+
+# STEP 2 — AUDIT THE LARAVEL BACKEND
+
+Inspect the Laravel backend thoroughly.
+
+Pay special attention to:
+
+* `routes/api.php`
+* controllers
+* services
+* models
+* policies
+* middleware
+* requests
+* resources
+* database relationships
+* notifications
+* jobs
+* events
+* authentication
+* Sanctum
+* order logic
+* cart logic
+* product logic
+* mall logic
+* category logic
+* section logic
+* offer/promotion logic
+* QR logic
+* user/profile logic
+* agent functionality
+* customer functionality
+
+Create a complete inventory of API capabilities.
+
+For each relevant endpoint record:
+
+* HTTP method
+* endpoint
+* authentication requirement
+* user role
+* purpose
+* parameters
+* response/data
+* whether currently used by the mobile app
+* whether currently used by the website
+* whether it appears suitable for mobile use
+
+Do NOT expose or print secrets, tokens, passwords, API keys, or private credentials.
+
+---
+
+# STEP 3 — AUDIT THE EXISTING API CLIENTS
+
+Inspect the web application's API/service layer.
+
+Find:
+
+* all API service files
+* Axios/fetch clients
+* API hooks
+* React Query hooks
+* endpoint wrappers
+* request/response transformations
+
+Build a list of all API operations actually consumed by the current website.
+
+Distinguish:
+
+1. Endpoint exists and website uses it.
+2. Endpoint exists but website does not currently use it.
+3. Endpoint is legacy/deprecated.
+4. Endpoint is admin-only.
+5. Endpoint is agent-only.
+6. Endpoint is customer-facing.
+
+---
+
+# STEP 4 — AUDIT THE CURRENT MOBILE APPLICATION
+
+Inspect:
+
+`artifacts/smartmall-mobile`
+
+Inventory every implemented mobile feature.
+
+For each feature identify:
+
+* screen
+* route
+* API endpoint
+* hook/service
+* UI component
+* authentication requirement
+* role
+* current status
+* whether manually tested
+* whether production-ready
+
+Include the functionality completed in previous phases:
+
+* authentication
+* home
+* malls
+* offers
+* products
+* product details
+* search
+* mall catalog
+* cart
+* checkout
+* orders
+* QR scanner
+* notifications
+* profile/account
+* Arabic RTL
+* English LTR
+
+Do not assume these are complete merely because a screen exists.
+
+Check their actual implementation.
+
+---
+
+# STEP 5 — BUILD A FEATURE PARITY MATRIX
+
+Create a detailed matrix.
+
+Use this structure:
+
+| Feature | Website | Backend/API | Mobile | Mobile Status | Missing | Priority | Recommendation |
+| ------- | ------- | ----------- | ------ | ------------- | ------- | -------- | -------------- |
+
+Use statuses:
+
+* ✅ Complete
+* 🟡 Partial
+* ❌ Missing
+* ⚪ Web/Admin only
+* 🔴 Backend capability exists but mobile integration missing
+* 🟠 Exists but incomplete/buggy
+
+---
+
+# STEP 6 — IMPORTANT: SEARCH FOR HIDDEN FEATURES
+
+Do NOT only compare visible pages.
+
+Look for functionality hidden behind:
+
+* buttons
+* menus
+* dropdowns
+* modals
+* tabs
+* context menus
+* profile actions
+* order actions
+* product actions
+* mall actions
+* QR flows
+* notifications
+* deep links
+* redirects
+* query parameters
+* role-based routes
+* conditional rendering
+* feature flags
+
+Also inspect unused API endpoints that may indicate functionality that existed or was partially implemented.
+
+---
+
+# STEP 7 — CUSTOMER FEATURE PARITY
+
+Create a dedicated section:
+
+## Customer Features Missing From Mobile
+
+For every missing customer feature explain:
+
+### Feature:
+
+What it does.
+
+### Existing Website:
+
+Where/how it currently works.
+
+### Backend:
+
+Which API/controller/service supports it.
+
+### Mobile:
+
+What currently exists.
+
+### Missing:
+
+Exactly what is absent.
+
+### Difficulty:
+
+Low / Medium / High
+
+### Priority:
+
+P0 / P1 / P2 / P3
+
+### Recommendation:
+
+Add now / Add later / Do not add to mobile
+
+---
+
+# STEP 8 — AGENT FEATURE PARITY
+
+Perform the same audit for the Agent role.
+
+Determine whether the current mobile application contains:
+
+* agent authentication
+* agent dashboard
+* agent products
+* agent orders
+* agent QR functionality
+* agent profile
+* agent business functionality
+* agent notifications
+* any other agent-specific functionality
+
+Clearly separate agent functionality from customer functionality.
+
+If the current mobile application was designed primarily for customers, DO NOT automatically add agent functionality.
+
+Instead report it separately.
+
+---
+
+# STEP 9 — ADMIN FUNCTIONALITY
+
+Identify admin functionality but DO NOT recommend moving the admin panel into the customer mobile application unless there is already an explicit mobile-admin requirement.
+
+Examples:
+
+* product management
+* mall management
+* user management
+* accounting
+* reports
+* system health
+* subscriptions
+* settings
+* bulk imports
+* backend administration
+
+Classify these as:
+
+`ADMIN / WEB ONLY`
+
+unless there is clear evidence that they belong in the mobile app.
+
+---
+
+# STEP 10 — API GAP ANALYSIS
+
+Create another table:
+
+| API Endpoint | Exists | Website Uses | Mobile Uses | Mobile Needed | Role | Priority |
+| ------------ | ------ | ------------ | ----------- | ------------- | ---- | -------- |
+
+Identify:
+
+### A. APIs already integrated into mobile
+
+### B. APIs available but not integrated into mobile
+
+### C. APIs required for missing features
+
+### D. APIs that should NOT be integrated into mobile
+
+Do not recommend creating a new endpoint if an existing endpoint already provides the required functionality.
+
+---
+
+# STEP 11 — DATA / UI GAP ANALYSIS
+
+Check whether some functionality exists in the backend but the mobile UI does not expose it.
+
+Examples:
+
+* product fields
+* product variants
+* prices
+* discounts
+* stock
+* mall information
+* categories
+* sections
+* opening hours
+* contact information
+* order status
+* delivery information
+* user information
+* notifications
+* promotions
+* cards/services
+
+Report these separately.
+
+---
+
+# STEP 12 — CHECK THE OLD WEBSITE FOR FUNCTIONALITY THAT MOBILE LOST
+
+This is particularly important.
+
+Compare the older/current web implementation against the new mobile application and identify features that existed previously but were not carried over.
+
+Do not assume that a feature is obsolete simply because it is not currently visible.
+
+Search Git history and existing source code where useful.
+
+If using git history, inspect relevant commits without modifying the repository.
+
+---
+
+# STEP 13 — PRIORITIZATION
+
+After finding all gaps, classify them:
+
+## P0 — Must Have Before Release
+
+A missing feature that would make the mobile shopping experience incomplete or break a core flow.
+
+## P1 — Important
+
+A significant customer feature that should be included soon.
+
+## P2 — Nice to Have
+
+Useful but not required for v1.
+
+## P3 — Future
+
+Can safely wait for a later version.
+
+---
+
+# STEP 14 — DO NOT DUPLICATE EXISTING FEATURES
+
+Before marking anything missing, verify:
+
+* route
+* screen
+* component
+* hook
+* API service
+* query
+* mutation
+* modal
+* action
+
+A feature is only "missing" if the functionality is genuinely unavailable to the user.
+
+Do not report a feature as missing simply because it has a different name.
+
+---
+
+# STEP 15 — FINAL RECOMMENDATION
+
+At the end provide:
+
+## 1. Current Mobile Coverage
+
+Example:
+
+`XX / YY customer capabilities implemented`
+
+Give an estimated percentage only if it can be calculated from the actual inventory.
+
+Do not invent percentages.
+
+---
+
+## 2. Missing Features — Ranked
+
+Create a concise ranked list:
+
+1. Feature — P0
+2. Feature — P0
+3. Feature — P1
+4. Feature — P1
+5. Feature — P2
+
+---
+
+## 3. Features NOT Recommended for Mobile
+
+List functionality that should remain:
+
+* Admin
+* Internal operations
+* Web-only
+* Desktop-oriented
+* Dangerous/high-risk to duplicate
+
+---
+
+## 4. Backend/API Readiness
+
+State whether the existing backend already supports each missing feature.
+
+Use:
+
+* `READY — existing API`
+* `PARTIALLY READY`
+* `BACKEND CHANGE REQUIRED`
+* `UNCLEAR — requires manual verification`
+
+Do NOT modify the backend.
+
+---
+
+## 5. Recommended Implementation Order
+
+Provide the recommended next phases after this audit.
+
+Example:
+
+Phase A — Missing P0 customer features
+
+Phase B — Missing P1 customer features
+
+Phase C — Agent mobile functionality if required
+
+Phase D — Final QA
+
+Phase E — Android release
+
+Phase F — iOS release
+
+---
+
+# IMPORTANT SAFETY / PRODUCTION RULES
+
+This is a production system.
+
+Do not:
+
+* create real customer accounts
+* create real orders
+* modify production data
+* delete anything
+* change production settings
+* modify database records
+* trigger destructive endpoints
+* send real notifications
+* make financial transactions
+
+This task is READ-ONLY.
+
+If a live endpoint must be inspected, use safe GET/read operations only.
+
+---
+
+# FINAL REPORT FORMAT
+
+Return the final report in this exact order:
+
+# SmartMall Mobile — Feature Parity Audit
+
+## A. Executive Summary
+
+## B. Customer Feature Matrix
+
+## C. Agent Feature Matrix
+
+## D. Admin / Web-Only Features
+
+## E. API Inventory
+
+## F. Mobile → API Mapping
+
+## G. Missing Mobile Features
+
+## H. Backend Readiness
+
+## I. Priority Ranking
+
+## J. Recommended Next Implementation Phases
+
+## K. Files / Routes / Controllers Reviewed
+
+## L. Important Risks or Unknowns
+
+## M. Final Release Gap
+
+At the very end provide:
+
+### FINAL STATUS
+
+One of:
+
+`AUDIT COMPLETE — FEATURE GAP IDENTIFIED`
+
+or
+
+`AUDIT BLOCKED — EXPLAIN EXACTLY WHY`
+
+Do not implement anything during this task.
+Do not proceed to the next development phase.
