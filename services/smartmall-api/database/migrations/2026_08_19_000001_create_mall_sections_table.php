@@ -52,12 +52,29 @@ return new class extends Migration
         }
 
         // Link existing products to their mall section via global section
-        DB::statement('
-            UPDATE products p
-            JOIN mall_sections ms ON ms.mall_id = p.mall_id AND ms.section_id = p.section_id
-            SET p.mall_section_id = ms.id
-            WHERE p.section_id IS NOT NULL
-        ');
+        if (!Schema::hasColumn('products', 'section_id')) {
+            return;
+        }
+
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('
+                UPDATE products p
+                JOIN mall_sections ms ON ms.mall_id = p.mall_id AND ms.section_id = p.section_id
+                SET p.mall_section_id = ms.id
+                WHERE p.section_id IS NOT NULL
+            ');
+        } else {
+            DB::statement('
+                UPDATE products
+                SET mall_section_id = (
+                    SELECT ms.id
+                    FROM mall_sections ms
+                    WHERE ms.mall_id = products.mall_id
+                      AND ms.section_id = products.section_id
+                )
+                WHERE section_id IS NOT NULL
+            ');
+        }
     }
 
     public function down(): void

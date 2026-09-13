@@ -12,9 +12,168 @@ use App\Helpers\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class POSController extends Controller
 {
+    /**
+     * Cashiers use a separate contract so their session and item access can
+     * never fall through to the owner POS routes.
+     */
+    public function cashierProducts(Request $request)
+    {
+        $mall = $this->cashierMall($request);
+        $query = Product::where('mall_id', $mall->id)
+            ->where('is_active', true);
+
+        if ($request->filled('search')) {
+            $search = trim($request->input('search'));
+            $subMatch = collect();
+            if (Schema::hasTable('sub_barcodes')) {
+                $subMatch = \App\Models\SubBarcode::where('mall_id', $mall->id)
+                    ->where('sub_barcode', 'like', "%{$search}%")
+                    ->pluck('product_id')
+                    ->filter()
+                    ->unique()
+                    ->values();
+            }
+
+            $query->where(function ($q) use ($search, $subMatch) {
+                $q->where('name_ar', 'like', "%{$search}%")
+                    ->orWhere('name_en', 'like', "%{$search}%")
+                    ->orWhere('barcode', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%");
+
+                if ($subMatch->isNotEmpty()) {
+                    $q->orWhereIn('id', $subMatch);
+                }
+            });
+        }
+
+        $perPage = min(max((int) $request->input('per_page', 30), 1), 50);
+
+        return response()->json(
+            $query->orderByRaw("COALESCE(NULLIF(name_ar, ''), name_en) ASC")->paginate($perPage)
+        );
+    }
+
+    public function createCashierSession(Request $request)
+    {
+        $mall = $this->cashierMall($request);
+        $user = $request->user();
+
+        $session = PosSyncSession::where('mall_id', $mall->id)
+            ->where('user_id', $user->id)
+            ->where('status', 'active')
+            ->first();
+
+        if ($session) {
+            return response()->json($session);
+        }
+
+        return response()->json(PosSyncSession::create([
+            'token' => Str::random(8),
+            'mall_id' => $mall->id,
+            'user_id' => $user->id,
+            'status' => 'active',
+        ]));
+    }
+
+    public function showCashierSession(Request $request, $token)
+    {
+        return response()->json($this->cashierSession($request, $token));
+    }
+
+    public function addCashierItem(Request $request, $token)
+    {
+        $this->cashierSession($request, $token, true);
+
+        // The existing item resolver handles product IDs, barcodes, sub-barcodes,
+        // stock checks, price snapshots, and activity logging.
+        return $this->addItem($request, $token);
+    }
+
+    public function updateCashierItem(Request $request, $itemId)
+    {
+        $this->cashierItemSession($request, $itemId, true);
+
+        return $this->updateItem($request, $itemId);
+    }
+
+    public function removeCashierItem(Request $request, $itemId)
+    {
+        $this->cashierItemSession($request, $itemId, true);
+
+        return $this->removeItem($itemId);
+    }
+
+    public function finalizeCashier(Request $request, $token)
+    {
+        $this->cashierSession($request, $token, true);
+
+        // The shared finalizer deliberately keeps direct-sale orders detached
+        // from customer accounts and applies the same stock/accounting rules.
+        return $this->finalize($request, $token);
+    }
+
+    public function closeCashierSession(Request $request, $token)
+    {
+        $this->cashierSession($request, $token, true);
+
+        return $this->closeSession($request, $token);
+    }
+
+    private function cashierMall(Request $request)
+    {
+        $user = $request->user();
+        $user->loadMissing('mall');
+        $mall = $user->mall;
+
+        if (!$mall) {
+            abort(404, 'No mall associated with this user');
+        }
+
+        if (!$mall->is_active) {
+            abort(403, 'This mall is inactive');
+        }
+
+        return $mall;
+    }
+
+    private function cashierSession(Request $request, $token, bool $activeOnly = false): PosSyncSession
+    {
+        $mall = $this->cashierMall($request);
+        $query = PosSyncSession::with('items.product')
+            ->where('token', $token)
+            ->where('mall_id', $mall->id)
+            ->where('user_id', $request->user()->id);
+
+        if ($activeOnly) {
+            $query->where('status', 'active');
+        }
+
+        return $query->firstOrFail();
+    }
+
+    private function cashierItemSession(Request $request, $itemId, bool $activeOnly = false): PosSyncSession
+    {
+        $mall = $this->cashierMall($request);
+        $query = PosSyncItem::query()
+            ->whereKey($itemId)
+            ->whereHas('session', function ($sessionQuery) use ($mall, $request, $activeOnly) {
+                $sessionQuery
+                    ->where('mall_id', $mall->id)
+                    ->where('user_id', $request->user()->id);
+
+                if ($activeOnly) {
+                    $sessionQuery->where('status', 'active');
+                }
+            })
+            ->with('session');
+
+        return $query->firstOrFail()->session;
+    }
+
     public function createSession(Request $request)
     {
         try {
