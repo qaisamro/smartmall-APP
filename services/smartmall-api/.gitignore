@@ -28,4 +28,5 @@ Thumbs.db
 
 # Google Drive Service Account
 /storage/app/google/*.json
+/storage/app/firebase/*.json
 /storage/app/temp/products-backup/

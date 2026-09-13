@@ -2,7 +2,7 @@
 
 namespace App\Notifications;
 
-use App\Channels\WebPushChannel;
+use App\Channels\MobileAwarePushChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Notifications\Notification;
@@ -94,7 +94,7 @@ class DeliveryStatusUpdated extends Notification implements ShouldBroadcast
 
     public function via(object $notifiable): array
     {
-        return ['database', 'broadcast', WebPushChannel::class];
+        return ['database', 'broadcast', MobileAwarePushChannel::class];
     }
 
     protected function withPrepTime(string $message): string

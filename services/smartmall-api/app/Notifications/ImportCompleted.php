@@ -2,7 +2,7 @@
 
 namespace App\Notifications;
 
-use App\Channels\WebPushChannel;
+use App\Channels\MobileAwarePushChannel;
 use App\Models\ProductImport;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
@@ -21,7 +21,7 @@ class ImportCompleted extends Notification implements ShouldBroadcast
 
     public function via($notifiable): array
     {
-        return ['database', 'broadcast', WebPushChannel::class];
+        return ['database', 'broadcast', MobileAwarePushChannel::class];
     }
 
     public function toArray($notifiable): array

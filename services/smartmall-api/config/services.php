@@ -52,6 +52,14 @@ return [
         'subject'     => env('VAPID_SUBJECT', env('APP_URL', 'https://samrtmall.cloud')),
     ],
 
+    'firebase' => [
+        'project_id' => env('FIREBASE_PROJECT_ID'),
+        'credentials' => env(
+            'FIREBASE_CREDENTIALS',
+            storage_path('app/firebase/service-account.json')
+        ),
+    ],
+
     'google_drive' => [
         // OAuth 2.0 (حساب شخصي smartmallps2026@gmail.com - My Drive)
         'client_id'     => env('GOOGLE_DRIVE_OAUTH_CLIENT_ID'),

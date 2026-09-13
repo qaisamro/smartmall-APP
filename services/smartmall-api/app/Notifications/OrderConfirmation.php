@@ -2,7 +2,7 @@
 
 namespace App\Notifications;
 
-use App\Channels\WebPushChannel;
+use App\Channels\MobileAwarePushChannel;
 use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
@@ -19,7 +19,7 @@ class OrderConfirmation extends Notification implements ShouldBroadcast
 
     public function via(object $notifiable): array
     {
-        $channels = ['database', 'broadcast', WebPushChannel::class];
+        $channels = ['database', 'broadcast', MobileAwarePushChannel::class];
         if ($notifiable->email) {
             $channels[] = 'mail';
         }

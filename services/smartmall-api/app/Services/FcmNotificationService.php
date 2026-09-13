@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\FcmToken;
+use App\Models\User;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Notifications\Notification as LaravelNotification;
 use Kreait\Firebase\Factory;
 use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\Notification;
@@ -38,7 +40,7 @@ class FcmNotificationService
             return ['success' => false, 'failed' => 0, 'total' => 0, 'errors' => ['FCM disabled']];
         }
 
-        $tokens = FcmToken::active()->forUser($userId)->get();
+        $tokens = FcmToken::active()->forUser($userId)->where('platform', 'android')->get();
         if ($tokens->isEmpty()) {
             return ['success' => true, 'failed' => 0, 'total' => 0, 'errors' => []];
         }
@@ -64,10 +66,60 @@ class FcmNotificationService
         return ['success' => $success > 0, 'failed' => $failed, 'total' => $tokens->count(), 'errors' => $errors];
     }
 
+    /**
+     * Send a Laravel notification to Android FCM targets.
+     *
+     * The boolean return value means an Android FCM target existed and was
+     * attempted. WebPushChannel uses it for the conditional delivery policy:
+     * one event is sent to FCM or Web Push, never both.
+     */
+    public function sendForNotification(User $user, LaravelNotification $notification): bool
+    {
+        if (!$this->messaging || !$this->enabled) {
+            return false;
+        }
+
+        $hasTarget = FcmToken::active()
+            ->where('user_id', $user->id)
+            ->where('platform', 'android')
+            ->exists();
+
+        if (!$hasTarget) {
+            return false;
+        }
+
+        $push = method_exists($notification, 'toWebPush')
+            ? $notification->toWebPush($user)
+            : [];
+        $rawData = method_exists($notification, 'toArray')
+            ? $notification->toArray($user)
+            : [];
+        $data = [];
+
+        foreach ($rawData as $key => $value) {
+            if ($value === null) {
+                continue;
+            }
+            $data[(string) $key] = is_scalar($value)
+                ? (string) $value
+                : (string) json_encode($value, JSON_UNESCAPED_UNICODE);
+        }
+
+        $this->sendToUser(
+            $user->id,
+            (string) ($push['title'] ?? ''),
+            (string) ($push['body'] ?? ''),
+            (string) ($push['url'] ?? '/notifications'),
+            $data,
+        );
+
+        return true;
+    }
+
     public function sendToUsers(array $userIds, string $title, string $body, string $url = '/', array $data = []): array
     {
         if (!$this->messaging || !$this->enabled) return ['success' => false, 'failed' => 0, 'total' => 0, 'errors' => ['FCM disabled']];
-        $tokens = FcmToken::active()->whereIn('user_id', $userIds)->get();
+        $tokens = FcmToken::active()->whereIn('user_id', $userIds)->where('platform', 'android')->get();
         if ($tokens->isEmpty()) return ['success' => true, 'failed' => 0, 'total' => 0, 'errors' => []];
         $payload = array_merge(['url' => $url], $data);
         $success = 0; $failed = 0; $errors = []; $invalidTokens = [];
@@ -84,7 +136,7 @@ class FcmNotificationService
     public function sendToAll(string $title, string $body, string $url = '/', array $data = []): array
     {
         if (!$this->messaging || !$this->enabled) return ['success' => false, 'failed' => 0, 'total' => 0, 'errors' => ['FCM disabled']];
-        $tokens = FcmToken::active()->get();
+        $tokens = FcmToken::active()->where('platform', 'android')->get();
         if ($tokens->isEmpty()) return ['success' => true, 'failed' => 0, 'total' => 0, 'errors' => []];
         $payload = array_merge(['url' => $url], $data);
         $success = 0; $failed = 0; $errors = []; $invalidTokens = [];

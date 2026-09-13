@@ -12,7 +12,7 @@ class FcmTokenController extends Controller
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'token' => 'required|string|max:512',
+            'token' => 'required|string|max:255',
             'platform' => 'sometimes|string|in:android,ios,web',
             'device_id' => 'sometimes|string|max:255',
             'app_version' => 'sometimes|string|max:32',
@@ -27,7 +27,7 @@ class FcmTokenController extends Controller
 
     public function destroy(Request $request)
     {
-        $validator = Validator::make($request->all(), ['token' => 'required|string|max:512']);
+        $validator = Validator::make($request->all(), ['token' => 'required|string|max:255']);
         if ($validator->fails()) return response()->json(['message' => 'Validation failed', 'errors' => $validator->errors()], 422);
         $user = $request->user();
         $deleted = FcmToken::where('token', $request->token)->where('user_id', optional($user)->id)->delete();
