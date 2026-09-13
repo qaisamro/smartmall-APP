@@ -8,11 +8,17 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
+        apiPrefix: 'api',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(\App\Http\Middleware\RequestIdMiddleware::class);
+        // Laravel's API group is stateless by default. Keep it free of the
+        // session/CSRF middleware and normalize API requests to JSON.
+        $middleware->api(prepend: [
+            \App\Http\Middleware\ForceJsonResponse::class,
+        ]);
         $middleware->alias([
             'role'       => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
@@ -21,10 +27,49 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, \Illuminate\Http\Request $request) {
-            if ($request->expectsJson() || $request->is('api/*')) {
-                return response()->json(['message' => 'Unauthenticated.'], 401);
+        $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
+            $isApiRequest = $request->is('api/*') || $request->expectsJson();
+
+            if (! $isApiRequest) {
+                return null;
             }
+
+            if ($e instanceof \Illuminate\Auth\AuthenticationException) {
+                return response()->json([
+                    'message' => 'Unauthenticated.',
+                    'code' => 'unauthenticated',
+                ], 401);
+            }
+
+            if ($e instanceof \Illuminate\Validation\ValidationException) {
+                return response()->json([
+                    'message' => 'The given data was invalid.',
+                    'code' => 'validation_failed',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
+
+            if ($e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException) {
+                return response()->json([
+                    'message' => 'Resource not found.',
+                    'code' => 'resource_not_found',
+                ], 404);
+            }
+
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                $status = $e->getStatusCode();
+
+                return response()->json([
+                    'message' => $e->getMessage() ?: (\Symfony\Component\HttpFoundation\Response::$statusTexts[$status] ?? 'HTTP error.'),
+                    'code' => $status === 404 ? 'not_found' : 'http_error',
+                ], $status, $e->getHeaders());
+            }
+
+            return response()->json([
+                'message' => 'Internal Server Error.',
+                'code' => 'internal_server_error',
+                'request_id' => $request->attributes->get('request_id'),
+            ], 500);
         });
         $exceptions->report(function (\Throwable $e) {
             try {
