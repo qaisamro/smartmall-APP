@@ -9,7 +9,6 @@ import { useAuthStore } from '@/src/store/authStore';
 import { router } from 'expo-router';
 import type { z } from 'zod';
 import { signInWithGoogle } from '@/src/services/googleAuth';
-import { signInWithAppleLocally } from '@/src/services/appleAuth';
 
 export function useLogin() {
   const authStoreLogin = useAuthStore(state => state.login);
@@ -32,12 +31,6 @@ export function useGoogleLogin() {
       const accessToken = await signInWithGoogle();
       await loginWithAccessToken(accessToken);
     },
-  });
-}
-
-export function useAppleLogin() {
-  return useMutation({
-    mutationFn: signInWithAppleLocally,
   });
 }
 

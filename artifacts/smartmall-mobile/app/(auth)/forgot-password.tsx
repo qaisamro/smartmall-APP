@@ -8,15 +8,13 @@ import { AppInput } from '@/src/components/AppInput';
 import { AppButton } from '@/src/components/AppButton';
 import { useColors } from '@/hooks/useColors';
 import { forgotPasswordSchema } from '@/src/features/auth/authApi';
+import { useForgotPassword } from '@/src/features/auth/useAuthHooks';
+import { handleFormApiError } from '@/src/utils/errorHandling';
 import type { z } from 'zod';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 import { router } from 'expo-router';
 import { AuthScreenHeader, GuestNavigationBar } from '@/src/components/AuthGuestNavigation';
-import {
-  startWhatsAppVerification,
-  type WhatsAppVerification,
-} from '@/src/services/whatsappVerification';
 
 type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>;
 
@@ -24,41 +22,25 @@ export default function ForgotPasswordScreen() {
   const { t } = useTranslation();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const [whatsappError, setWhatsappError] = useState<string | null>(null);
-  const [isOpeningWhatsApp, setIsOpeningWhatsApp] = useState(false);
-  const [whatsappVerification, setWhatsappVerification] = useState<WhatsAppVerification | null>(null);
-  const [pendingPhone, setPendingPhone] = useState('');
+  const forgotPasswordMutation = useForgotPassword();
+  const [serverError, setServerError] = useState<string | null>(null);
 
-  const { control, handleSubmit, formState: { errors } } = useForm<ForgotPasswordForm>({
+  const { control, handleSubmit, formState: { errors }, setError } = useForm<ForgotPasswordForm>({
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: { phone: '' }
   });
 
   const onSubmit = (data: ForgotPasswordForm) => {
-    setWhatsappError(null);
-    setIsOpeningWhatsApp(true);
-    void startWhatsAppVerification({ kind: 'reset', phone: data.phone })
-      .then((verification) => {
-        setPendingPhone(data.phone);
-        setWhatsappVerification(verification);
-      })
-      .catch((error: unknown) => {
-        setWhatsappError(
-          error instanceof Error && error.message === 'whatsapp_unavailable'
-            ? t('auth.whatsapp_open_failed')
-            : t('auth.whatsapp_open_failed'),
-        );
-      })
-      .finally(() => setIsOpeningWhatsApp(false));
-  };
-
-  const continueToReset = () => {
-    if (!whatsappVerification || !pendingPhone) return;
-    router.replace({
-      pathname: '/(auth)/reset-password',
-      params: {
-        phone: pendingPhone,
-        verificationId: whatsappVerification.verificationId,
+    setServerError(null);
+    forgotPasswordMutation.mutate(data, {
+      onSuccess: () => {
+        router.replace({
+          pathname: '/(auth)/reset-password',
+          params: { phone: data.phone },
+        });
+      },
+      onError: (error) => {
+        setServerError(handleFormApiError(error, setError, t));
       },
     });
   };
@@ -96,28 +78,15 @@ export default function ForgotPasswordScreen() {
             )}
           />
 
-          {whatsappVerification ? (
-            <>
-              <Text style={[styles.whatsappNotice, { color: colors.mutedForeground }]}>
-                {t('auth.whatsapp_reset_sent')}
-              </Text>
-              <AppButton
-                label={t('auth.whatsapp_sent_continue')}
-                onPress={continueToReset}
-                testID="forgot-whatsapp-continue"
-              />
-            </>
-          ) : (
-            <AppButton
-              label={t('auth.reset_via_whatsapp')}
-              onPress={handleSubmit(onSubmit)}
-              loading={isOpeningWhatsApp}
-              testID="forgot-whatsapp-start"
-            />
-          )}
-          {whatsappError && (
+          <AppButton
+            label={t('auth.send_reset_link')}
+            onPress={handleSubmit(onSubmit)}
+            loading={forgotPasswordMutation.isPending}
+            testID="forgot-sms-start"
+          />
+          {serverError && (
             <Text style={[styles.errorText, { color: colors.destructive }]}>
-              {whatsappError}
+              {serverError}
             </Text>
           )}
           <Link href="/(auth)/reset-password" asChild>
@@ -166,13 +135,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     marginTop: 16,
-  },
-  whatsappNotice: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 14,
-    lineHeight: 21,
-    textAlign: 'center',
-    marginTop: 8,
   },
   tokenLink: {
     minHeight: 44,

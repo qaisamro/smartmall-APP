@@ -14,7 +14,6 @@ import type { z } from 'zod';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { AuthScreenHeader, GuestNavigationBar } from '@/src/components/AuthGuestNavigation';
-import { verifyWhatsAppVerification } from '@/src/services/whatsappVerification';
 
 type ResetPasswordForm = z.infer<typeof resetPasswordSchema>;
 
@@ -24,7 +23,6 @@ export default function ResetPasswordScreen() {
   const insets = useSafeAreaInsets();
   const resetMutation = useResetPassword();
   const [serverError, setServerError] = useState<string | null>(null);
-  const [isVerifyingWhatsApp, setIsVerifyingWhatsApp] = useState(false);
   const params = useLocalSearchParams();
 
   const { control, handleSubmit, formState: { errors }, setError } = useForm<ResetPasswordForm>({
@@ -39,31 +37,6 @@ export default function ResetPasswordScreen() {
 
   const onSubmit = (data: ResetPasswordForm) => {
     setServerError(null);
-    const verificationId = typeof params.verificationId === 'string' ? params.verificationId : '';
-
-    if (verificationId) {
-      setIsVerifyingWhatsApp(true);
-      void verifyWhatsAppVerification({
-        kind: 'reset',
-        phone: data.phone,
-        verificationId,
-        code: data.token,
-      }).then((verificationToken) => {
-        resetMutation.mutate({
-          ...data,
-          verification_token: verificationToken,
-        }, {
-          onSuccess: () => router.replace('/(auth)/login'),
-          onError: (error) => setServerError(handleFormApiError(error, setError, t)),
-        });
-      }).catch((error: unknown) => {
-        setServerError(
-          error instanceof Error ? error.message : t('error.network'),
-        );
-      }).finally(() => setIsVerifyingWhatsApp(false));
-      return;
-    }
-
     resetMutation.mutate(data, {
       onSuccess: () => router.replace('/(auth)/login'),
       onError: (error) => setServerError(handleFormApiError(error, setError, t)),
@@ -81,7 +54,7 @@ export default function ResetPasswordScreen() {
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.foreground }]}>{t('auth.set_new_password')}</Text>
           <Text style={[styles.subtitle, { color: colors.mutedForeground, marginTop: 8 }]}>
-            {params.verificationId || params.token ? t('auth.whatsapp_reset_ready') : t('auth.reset_missing_token')}
+            {params.phone ? t('auth.reset_sent') : t('auth.reset_missing_token')}
           </Text>
         </View>
 
@@ -109,6 +82,8 @@ export default function ResetPasswordScreen() {
             <AppInput
               label={t('auth.reset_token')}
               autoCapitalize="none"
+              keyboardType="number-pad"
+              maxLength={6}
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}
@@ -154,7 +129,7 @@ export default function ResetPasswordScreen() {
           <AppButton
             label={t('auth.reset_password')}
             onPress={handleSubmit(onSubmit)}
-            loading={isVerifyingWhatsApp || resetMutation.isPending}
+            loading={resetMutation.isPending}
           />
           {serverError && (
             <Text style={[styles.errorText, { color: colors.destructive }]}>

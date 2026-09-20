@@ -30,7 +30,6 @@
       "expo-dev-client",
       "expo-secure-store",
       "expo-localization",
-      "expo-apple-authentication",
       [
         "expo-camera",
         {

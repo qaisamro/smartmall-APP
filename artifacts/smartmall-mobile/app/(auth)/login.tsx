@@ -11,16 +11,11 @@ import { useColors } from '@/hooks/useColors';
 import { loginSchema } from '@/src/features/auth/authApi';
 import { useLogin } from '@/src/features/auth/useAuthHooks';
 import { useGoogleLogin } from '@/src/features/auth/useAuthHooks';
-import { useAppleLogin } from '@/src/features/auth/useAuthHooks';
 import { handleFormApiError } from '@/src/utils/errorHandling';
 import type { z } from 'zod';
 import { Image } from 'expo-image';
 import { AuthScreenHeader, GuestNavigationBar } from '@/src/components/AuthGuestNavigation';
-import {
-  AppleSignInButton,
-  FacebookSignInButton,
-  GoogleSignInButton,
-} from '@/src/components/GoogleSignInButton';
+import { GoogleSignInButton } from '@/src/components/GoogleSignInButton';
 
 type LoginForm = z.infer<typeof loginSchema>;
 
@@ -29,9 +24,7 @@ export default function LoginScreen() {
   const colors = useColors();
   const loginMutation = useLogin();
   const googleLoginMutation = useGoogleLogin();
-  const appleLoginMutation = useAppleLogin();
   const [serverError, setServerError] = useState<string | null>(null);
-  const [facebookInfo, setFacebookInfo] = useState<string | null>(null);
 
   const { control, handleSubmit, formState: { errors }, setError } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -123,26 +116,9 @@ export default function LoginScreen() {
             loading={googleLoginMutation.isPending}
             onPress={() => googleLoginMutation.mutate()}
           />
-          <FacebookSignInButton onPress={() => setFacebookInfo(t('auth.facebook_unavailable'))} />
-          <AppleSignInButton
-            loading={appleLoginMutation.isPending}
-            onPress={() => appleLoginMutation.mutate()}
-          />
-          {(serverError || googleLoginMutation.error || facebookInfo || appleLoginMutation.error) && (
+          {(serverError || googleLoginMutation.error) && (
             <Text style={[styles.errorText, { color: colors.destructive }]}>
-              {facebookInfo ??
-                (appleLoginMutation.error instanceof Error
-                  ? appleLoginMutation.error.message === 'apple_ios_only'
-                    ? t('auth.apple_ios_only')
-                    : appleLoginMutation.error.message === 'apple_cancelled'
-                      ? t('auth.apple_cancelled')
-                      : appleLoginMutation.error.message === 'apple_unavailable'
-                        ? t('auth.apple_unavailable')
-                        : appleLoginMutation.error.message === 'apple_missing_identity_token'
-                          ? t('auth.apple_failed')
-                          : t('auth.apple_server_unavailable')
-                  : null) ??
-                serverError ??
+              {serverError ??
                 (googleLoginMutation.error instanceof Error &&
                 googleLoginMutation.error.message === 'google_native_only'
                   ? t('auth.google_native_only')

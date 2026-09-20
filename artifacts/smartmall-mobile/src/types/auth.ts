@@ -32,7 +32,6 @@ export interface RegisterCredentials {
   phone: string;
   password: string;
   password_confirmation: string;
-  whatsapp_verification_token?: string;
   role?: string;
 }
 

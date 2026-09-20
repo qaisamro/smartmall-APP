@@ -12,7 +12,6 @@ export const registerSchema = z.object({
   phone: z.string().trim().regex(/^\+?[0-9]{7,20}$/, 'validation.phone'),
   password: z.string().min(8, 'validation.password'),
   password_confirmation: z.string().min(8, 'validation.password'),
-  whatsapp_verification_token: z.string().optional(),
 }).refine(data => data.password === data.password_confirmation, {
   message: 'validation.password_match',
   path: ["password_confirmation"],
@@ -27,7 +26,6 @@ export const resetPasswordSchema = z.object({
   token: z.string().min(1, 'validation.token'),
   password: z.string().min(8, 'validation.password'),
   password_confirmation: z.string().min(8, 'validation.password'),
-  verification_token: z.string().optional(),
 }).refine(data => data.password === data.password_confirmation, {
   message: 'validation.password_match',
   path: ["password_confirmation"],

@@ -59,7 +59,6 @@
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
     "axios": "1.16.1",
-    "expo-apple-authentication": "57.0.2",
     "expo-camera": "~57.0.5",
     "expo-dev-client": "~57.0.19",
     "expo-localization": "~57.0.2",

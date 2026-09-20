@@ -9,103 +9,26 @@ import { AppInput } from '@/src/components/AppInput';
 import { AppButton } from '@/src/components/AppButton';
 import { useColors } from '@/hooks/useColors';
 import { registerSchema } from '@/src/features/auth/authApi';
-import { useRegister } from '@/src/features/auth/useAuthHooks';
 import { useGoogleLogin } from '@/src/features/auth/useAuthHooks';
-import { useAppleLogin } from '@/src/features/auth/useAuthHooks';
-import { handleFormApiError } from '@/src/utils/errorHandling';
 import type { z } from 'zod';
 import { AuthScreenHeader, GuestNavigationBar } from '@/src/components/AuthGuestNavigation';
-import {
-  startWhatsAppVerification,
-  verifyWhatsAppVerification,
-  type WhatsAppVerification,
-} from '@/src/services/whatsappVerification';
-import {
-  AppleSignInButton,
-  FacebookSignInButton,
-  GoogleSignInButton,
-} from '@/src/components/GoogleSignInButton';
+import { GoogleSignInButton } from '@/src/components/GoogleSignInButton';
 
 type RegisterForm = z.infer<typeof registerSchema>;
 
 export default function RegisterScreen() {
   const { t } = useTranslation();
   const colors = useColors();
-  const registerMutation = useRegister();
   const googleLoginMutation = useGoogleLogin();
-  const appleLoginMutation = useAppleLogin();
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [facebookInfo, setFacebookInfo] = useState<string | null>(null);
-  const [whatsappError, setWhatsappError] = useState<string | null>(null);
-  const [isOpeningWhatsApp, setIsOpeningWhatsApp] = useState(false);
-  const [isVerifyingWhatsApp, setIsVerifyingWhatsApp] = useState(false);
-  const [whatsappVerification, setWhatsappVerification] = useState<WhatsAppVerification | null>(null);
-  const [pendingRegisterData, setPendingRegisterData] = useState<RegisterForm | null>(null);
-  const [verificationCode, setVerificationCode] = useState('');
+  const [smsError, setSmsError] = useState<string | null>(null);
 
-  const { control, handleSubmit, formState: { errors }, setError } = useForm<RegisterForm>({
+  const { control, handleSubmit, formState: { errors } } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
     defaultValues: { name: '', phone: '', password: '', password_confirmation: '' }
   });
 
-  const onSubmit = (data: RegisterForm) => {
-    setServerError(null);
-    registerMutation.mutate(data, {
-      onError: (error) => {
-        setServerError(handleFormApiError(error, setError, t));
-      }
-    });
-  };
-
-  const onWhatsAppVerification = async (data: RegisterForm) => {
-    setServerError(null);
-    setWhatsappError(null);
-    setIsOpeningWhatsApp(true);
-
-    try {
-      const verification = await startWhatsAppVerification({
-        kind: 'register',
-        name: data.name,
-        phone: data.phone,
-      });
-      setPendingRegisterData(data);
-      setWhatsappVerification(verification);
-    } catch (error) {
-      setWhatsappError(
-        error instanceof Error && error.message === 'whatsapp_unavailable'
-          ? t('auth.whatsapp_open_failed')
-          : t('auth.whatsapp_open_failed'),
-      );
-    } finally {
-      setIsOpeningWhatsApp(false);
-    }
-  };
-
-  const continueAfterWhatsApp = async () => {
-    if (!pendingRegisterData || !whatsappVerification || !verificationCode.trim()) return;
-    setWhatsappError(null);
-    setIsVerifyingWhatsApp(true);
-
-    try {
-      const verificationToken = await verifyWhatsAppVerification({
-        kind: 'register',
-        phone: pendingRegisterData.phone,
-        verificationId: whatsappVerification.verificationId,
-        code: verificationCode,
-      });
-      onSubmit({
-        ...pendingRegisterData,
-        whatsapp_verification_token: verificationToken,
-      });
-    } catch (error) {
-      setWhatsappError(
-        error instanceof Error && error.message === 'whatsapp_verification_unavailable'
-          ? t('auth.whatsapp_verification_unavailable')
-          : error instanceof Error ? error.message : t('error.network'),
-      );
-    } finally {
-      setIsVerifyingWhatsApp(false);
-    }
+  const onSubmit = (_data: RegisterForm) => {
+    setSmsError(t('auth.sms_registration_unavailable'));
   };
 
   return (
@@ -189,46 +112,11 @@ export default function RegisterScreen() {
             )}
           />
 
-          {whatsappVerification ? (
-            <>
-              <Text style={[styles.whatsappNotice, { color: colors.mutedForeground }]}>
-                {t('auth.whatsapp_verification_sent')}
-              </Text>
-              <AppInput
-                label={t('auth.reset_token')}
-                placeholder="123456"
-                keyboardType="number-pad"
-                autoCapitalize="none"
-                value={verificationCode}
-                onChangeText={setVerificationCode}
-              />
-              <AppButton
-                label={t('auth.whatsapp_sent_continue')}
-                onPress={continueAfterWhatsApp}
-                loading={isVerifyingWhatsApp || registerMutation.isPending}
-                testID="register-whatsapp-continue"
-              />
-              <Pressable
-                style={styles.editVerificationButton}
-                onPress={() => {
-                  setWhatsappVerification(null);
-                  setPendingRegisterData(null);
-                  setVerificationCode('');
-                }}
-              >
-                <Text style={[styles.editVerificationText, { color: colors.primary }]}>
-                  {t('auth.whatsapp_edit_data')}
-                </Text>
-              </Pressable>
-            </>
-          ) : (
-            <AppButton
-              label={t('auth.confirm_account_whatsapp')}
-              onPress={handleSubmit(onWhatsAppVerification)}
-              loading={isOpeningWhatsApp}
-              testID="register-whatsapp-start"
-            />
-          )}
+          <AppButton
+            label={t('auth.register_with_sms')}
+            onPress={handleSubmit(onSubmit)}
+            testID="register-sms-start"
+          />
           <View style={styles.divider}>
             <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
             <Text style={[styles.dividerText, { color: colors.mutedForeground }]}>{t('auth.or')}</Text>
@@ -238,27 +126,9 @@ export default function RegisterScreen() {
             loading={googleLoginMutation.isPending}
             onPress={() => googleLoginMutation.mutate()}
           />
-          <FacebookSignInButton onPress={() => setFacebookInfo(t('auth.facebook_unavailable'))} />
-          <AppleSignInButton
-            loading={appleLoginMutation.isPending}
-            onPress={() => appleLoginMutation.mutate()}
-          />
-          {(serverError || whatsappError || googleLoginMutation.error || facebookInfo || appleLoginMutation.error) && (
+          {(smsError || googleLoginMutation.error) && (
             <Text style={[styles.errorText, { color: colors.destructive }]}>
-              {whatsappError ??
-                facebookInfo ??
-                (appleLoginMutation.error instanceof Error
-                  ? appleLoginMutation.error.message === 'apple_ios_only'
-                    ? t('auth.apple_ios_only')
-                    : appleLoginMutation.error.message === 'apple_cancelled'
-                      ? t('auth.apple_cancelled')
-                      : appleLoginMutation.error.message === 'apple_unavailable'
-                        ? t('auth.apple_unavailable')
-                        : appleLoginMutation.error.message === 'apple_missing_identity_token'
-                          ? t('auth.apple_failed')
-                          : t('auth.apple_server_unavailable')
-                  : null) ??
-                serverError ??
+              {smsError ??
                 (googleLoginMutation.error instanceof Error &&
                 googleLoginMutation.error.message === 'google_native_only'
                   ? t('auth.google_native_only')
@@ -325,22 +195,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     marginTop: 16,
-  },
-  whatsappNotice: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 14,
-    lineHeight: 21,
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  editVerificationButton: {
-    minHeight: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  editVerificationText: {
-    fontFamily: 'Inter_500Medium',
-    fontSize: 14,
   },
   divider: {
     flexDirection: 'row',

@@ -1,5 +1,4 @@
 import { Pressable, StyleSheet, Text, View, ActivityIndicator } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import Svg, { Path } from 'react-native-svg';
 import { useColors } from '@/hooks/useColors';
@@ -59,55 +58,6 @@ export function GoogleSignInButton({ loading = false, onPress }: GoogleSignInBut
   );
 }
 
-type FacebookSignInButtonProps = {
-  onPress: () => void;
-};
-
-export function FacebookSignInButton({ onPress }: FacebookSignInButtonProps) {
-  const { t } = useTranslation();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={t('auth.facebook_sign_in')}
-      onPress={onPress}
-      style={({ pressed }) => [styles.facebookButton, { opacity: pressed ? 0.78 : 1 }]}
-    >
-      <FontAwesome name="facebook" size={20} color="#FFFFFF" />
-      <Text style={styles.facebookLabel}>{t('auth.facebook_sign_in')}</Text>
-    </Pressable>
-  );
-}
-
-type AppleSignInButtonProps = {
-  loading?: boolean;
-  onPress: () => void;
-};
-
-export function AppleSignInButton({ loading = false, onPress }: AppleSignInButtonProps) {
-  const { t } = useTranslation();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={t('auth.apple_sign_in')}
-      disabled={loading}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.appleButton,
-        { opacity: pressed || loading ? 0.78 : 1 },
-      ]}
-    >
-      {loading ? (
-        <ActivityIndicator color="#FFFFFF" />
-      ) : (
-        <FontAwesome name="apple" size={21} color="#FFFFFF" />
-      )}
-      <Text style={styles.appleLabel}>{t('auth.apple_sign_in')}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   button: {
     minHeight: 48,
@@ -126,38 +76,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   label: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 15,
-  },
-  facebookButton: {
-    minHeight: 48,
-    borderRadius: 6,
-    backgroundColor: '#1877F2',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    marginTop: 8,
-  },
-  facebookLabel: {
-    color: '#FFFFFF',
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 15,
-  },
-  appleButton: {
-    minHeight: 48,
-    borderRadius: 6,
-    backgroundColor: '#000000',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    marginTop: 8,
-  },
-  appleLabel: {
-    color: '#FFFFFF',
     fontFamily: 'Inter_600SemiBold',
     fontSize: 15,
   },
