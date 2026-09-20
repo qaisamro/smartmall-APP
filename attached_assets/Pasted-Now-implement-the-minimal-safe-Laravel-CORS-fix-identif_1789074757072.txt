@@ -1,0 +1,73 @@
+Now implement the minimal safe Laravel CORS fix identified by the previous read-only inspection.
+
+IMPORTANT SCOPE:
+
+* Fix ONLY the Laravel CORS configuration/middleware behavior required for Expo Web registration and API requests.
+* Do NOT modify the mobile app code.
+* Do NOT modify authentication logic.
+* Do NOT modify database code or migrations.
+* Do NOT modify order/checkout logic.
+* Do NOT modify existing website functionality.
+* Do NOT modify Capacitor Android/iOS.
+* Do NOT make unrelated refactors.
+
+Requirements:
+
+1. Keep the existing website origin(s) working exactly as they are.
+
+2. Allow the actual Expo Web development/staging origins identified during the previous inspection.
+
+   * Do NOT use Access-Control-Allow-Origin: *
+   * Do NOT broadly allow arbitrary origins.
+   * Keep the allowlist explicit and minimal.
+
+3. Ensure the API properly handles CORS preflight OPTIONS requests.
+
+4. Allow only the HTTP methods actually required by the existing API/mobile application.
+
+5. Allow the required request headers, including:
+
+   * Accept
+   * Content-Type
+   * Authorization
+   * Idempotency-Key
+     and any other header already proven necessary by the existing application.
+
+6. Preserve credentials/authentication behavior correctly.
+   Do not introduce wildcard origins together with credentials.
+
+7. Do not weaken Laravel/Sanctum authentication or authorization.
+
+8. Do not expose sensitive response headers unnecessarily.
+
+9. Inspect the actual production/deployment configuration before changing anything so the fix works with the existing web server/proxy setup.
+
+10. After making the change:
+
+* Run Laravel/PHP syntax validation for every modified PHP/config file.
+* Verify the API responds correctly to an OPTIONS preflight request.
+* Verify a browser-style POST request to:
+  POST /api/v1/register
+  receives the appropriate CORS headers.
+* Verify that validation errors such as HTTP 422 remain accessible to the browser.
+* Verify the existing website API requests are not broken.
+* Run the relevant existing tests if the repository environment allows them.
+* Run the mobile TypeScript/build checks only if needed to confirm no accidental mobile changes.
+
+11. Show me exactly:
+
+* Which files were changed.
+* The exact CORS behavior before and after.
+* Which origins are now allowed.
+* What headers/methods are allowed.
+* How OPTIONS is handled.
+* Validation/test results.
+* Any remaining limitation.
+
+IMPORTANT:
+Do not change anything outside the minimum CORS fix.
+Do not update Composer dependencies or composer.lock.
+Do not perform a broad Laravel upgrade.
+Do not create a real production customer account.
+
+Stop after completing and verifying this CORS fix and give me the final report.

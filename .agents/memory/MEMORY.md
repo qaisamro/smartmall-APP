@@ -1,0 +1,16 @@
+- [Expo SecureStore web preview](expo-securestore-web.md) — Expo 57 web previews need non-persistent memory storage instead of calling SecureStore's unavailable native methods.
+- [SmartMall checkout API safety](checkout-api-safety.md) — current mobile still uses legacy pending checkout; the transactional customer endpoint is the safer migration target.
+- [SmartMall mobile API environments](smartmall-mobile-api-environments.md) — every EAS profile must target the live Laravel API; placeholder domains surface as misleading network errors.
+- [SmartMall web CORS boundary](smartmall-web-cors-boundary.md) — the live API returns validation to native/curl but lacks CORS headers, so Expo Web reports a false network failure.
+- [SmartMall auth verification](smartmall-auth-verification.md) — use the repository Laravel service with isolated SQLite for auth checks; never create disposable accounts in production.
+- [Expo Router Slot styles](expo-router-slot-styles.md) — direct children of Link asChild/Slot must receive flattened styles, while nested component styles can remain arrays.
+- [SmartMall production API drift](smartmall-production-api-drift.md) — verify live Laravel routes before changing a mobile endpoint; Hostinger production can lag the repository route tree.
+- [Expo validation environment](expo-validation-environment.md) — SDK 57 patch drift and missing GLib for React Native DevTools can persist while production bundles still succeed.
+- [Expo Go notification boundary](expo-go-notifications.md) — Expo Go Android cannot use remote notifications; guard expo-notifications APIs there so routes like camera still load.
+- [Expo global direction](expo-global-direction.md) — synchronize native I18nManager only on native; web direction uses document.dir or reload loops can blank the preview.
+- [FCM delivery routing](fcm-delivery-routing.md) — keep Web Push primitives unchanged; route notifications through an additive mobile-aware channel for Android FCM exclusivity.
+- [Native POS scope](native-pos-scope.md) — owner and cashier POS contracts stay separate; cashier sessions/items must be bound to cashier and mall.
+- [Auth guest navigation](auth-guest-navigation.md) — auth screens should replace to public routes to avoid redirect loops from protected pages.
+- [Expo Apple Authentication](expo-apple-authentication-install.md) — Expo 57 uses the published 57.0.2 package; install it in the mobile workspace, not the monorepo root.
+- [Server-side WhatsApp verification](whatsapp-verification.md) — mobile carries only an opaque challenge and one-time proof; Laravel owns code generation, delivery, expiry, attempts, and consumption.
+- [Mobile numeric display](mobile-numeric-display.md) — keep Arabic/RTL text while normalizing every displayed number to Western digits only.

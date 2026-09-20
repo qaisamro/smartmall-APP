@@ -1,0 +1,158 @@
+Search & Discovery — Manual Test Fixes ONLY
+
+The authenticated manual test found real UI issues.
+Do NOT start a new phase.
+Do NOT change backend/API/dependencies.
+
+Fix ONLY the following Search & Discovery issues inside:
+artifacts/smartmall-mobile
+
+1. ARABIC / ENGLISH DIRECTION
+
+Audit the newly modified Search and Malls screens carefully.
+
+When language = Arabic:
+- Entire screen must follow RTL naturally.
+- Text alignment must be correct.
+- Search input direction must be RTL.
+- Search placeholder must align correctly.
+- Clear/search icons must appear in the correct visual position.
+- Mall cards and filter controls must follow RTL.
+- Product result groups must follow RTL.
+- Loading, empty, error and retry states must follow RTL.
+
+When language = English:
+- Entire screen must follow LTR naturally.
+- Search input and placeholders must be LTR.
+- Filter controls must be LTR.
+- Mall cards and result groups must be LTR.
+
+Do NOT use row-reverse hacks.
+
+Reuse the existing app direction architecture.
+Do not introduce a second RTL system.
+
+2. TRANSLATION AUDIT
+
+Review every user-visible string introduced or modified by the Search & Discovery implementation.
+
+There must be NO raw English strings visible in Arabic mode
+and NO raw Arabic strings visible where English translation is expected.
+
+Check especially:
+- Search
+- Clear search
+- Search malls
+- All
+- Malls
+- Supermarkets
+- No results
+- No malls found
+- Retry
+- Loading
+- mall/result labels
+- filter labels
+- error messages
+- empty states
+- accessibility labels/placeholders if user-visible
+
+Add missing Arabic and English translations to the existing i18n system.
+
+Do NOT hardcode translated strings directly inside components.
+
+Reuse existing translation architecture and naming conventions.
+
+3. MALL FILTER BUTTONS
+
+The All / Mall / Supermarket filter controls on:
+app/(customer)/(tabs)/malls.tsx
+
+are currently not fully visible on the device.
+
+Fix the layout so ALL filter buttons are fully visible and usable on normal mobile widths.
+
+Requirements:
+- No text clipping.
+- No buttons extending outside the screen.
+- No overlapping.
+- No hidden portion of a button.
+- Correct RTL behavior in Arabic.
+- Correct LTR behavior in English.
+- Touch targets must remain comfortable.
+- Labels must remain readable.
+
+Prefer a responsive horizontal filter/chip row with horizontal scrolling if necessary.
+
+The complete filter set must be accessible on narrow devices.
+
+Do NOT solve this by shrinking text excessively.
+
+Do NOT use fixed widths that break on smaller screens.
+
+Do NOT use row-reverse.
+
+4. SEARCH SCREEN
+
+Perform the same direction/translation audit on:
+app/(customer)/(tabs)/search.tsx
+
+Make sure the search field, clear button, result groups, product cards, empty state and error state behave correctly in both languages.
+
+5. DO NOT REGRESS EXISTING FEATURES
+
+Do not change:
+- production API contracts
+- global search endpoint
+- mall endpoint
+- mall details catalog
+- product details
+- checkout
+- orders
+- cart
+- scanner/QR
+- notifications
+- profile/auth
+- bottom navigation
+
+Do not add dependencies.
+
+6. FILE SCOPE
+
+Prefer modifying only:
+- app/(customer)/(tabs)/search.tsx
+- app/(customer)/(tabs)/malls.tsx
+- src/i18n/index.ts
+
+Only modify other Search & Discovery files if absolutely necessary.
+
+7. VALIDATION
+
+After fixing:
+
+- TypeScript
+- ESLint
+- Expo web export
+- Android production bundle
+- iOS production bundle
+- RTL scan
+- translation-string audit
+- git diff --check
+- scope verification
+
+If Expo Doctor again reports the known pre-existing 20/21 dependency drift,
+DO NOT change dependencies.
+
+8. IMPORTANT
+
+Do NOT claim the task is complete based only on static validation.
+
+The previous manual test found visible problems.
+The final report must clearly state:
+- what was fixed
+- which translations were added
+- how filter-button overflow was fixed
+- validation results
+- exact files changed
+
+STOP after this fix.
+Do not start another Search & Discovery phase.

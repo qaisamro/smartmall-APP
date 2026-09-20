@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+  </noscript>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --bg: #0a0a0f;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: white;
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      display: block !important;
+    }
+
+    #root {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── SPLASH SCREEN ── */
+    #splash {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(ellipse at 50% 40%, #1a1040 0%, #0a0a0f 70%);
+      transition: opacity 0.5s ease;
+    }
+    #splash.hide {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #splash-logo {
+      width: 100px;
+      height: auto;
+      animation: splashPulse 2s ease-in-out infinite;
+    }
+    #splash-title {
+      margin-top: 16px;
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      background: linear-gradient(135deg, #818cf8, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: splashFade 1.2s ease-out;
+    }
+    #splash-sub {
+      margin-top: 6px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.35);
+      font-weight: 500;
+      animation: splashFade 1.2s ease-out 0.3s both;
+    }
+    @keyframes splashPulse {
+      0%, 100% { transform: scale(1); opacity: 0.9; }
+      50% { transform: scale(1.06); opacity: 1; }
+    }
+    @keyframes splashFade {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+  <link id="favicon" rel="icon" type="image/png" href="/logo.png?v=2" />
+  <link rel="manifest" href="/manifest.json?v=2" />
+  <link rel="apple-touch-icon" href="/logo.png?v=2" />
+  <meta name="apple-mobile-web-app-title" content="SmartMall">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description"
+    content="سمارت مول - منصتك المتكاملة لاكتشاف أفضل المنتجات، المسح السريع بالباركود، والدفع السهل. ابدأ تجربة تسوق ذكية اليوم.">
+  <link rel="canonical" href="https://samrtmall.cloud/" />
+  <title>Smart Mall | المول الذكي</title>
+</head>
+
+<body>
+  <div id="splash">
+    <img id="splash-logo" src="/logo.webp" alt="SmartMall" width="100" height="86">
+    <div id="splash-title">SmartMall</div>
+    <div id="splash-sub">المول الذكي</div>
+  </div>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>

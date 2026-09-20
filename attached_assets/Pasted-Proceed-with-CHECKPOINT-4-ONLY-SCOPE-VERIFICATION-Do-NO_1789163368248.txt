@@ -1,0 +1,84 @@
+Proceed with CHECKPOINT 4 ONLY — SCOPE VERIFICATION.
+
+Do NOT run full validation yet.
+Do NOT start Checkpoint 5.
+Do NOT modify any files unless a critical scope issue must be corrected.
+
+Review the implementation from Checkpoint 3 and verify the actual git diff.
+
+Check the following strictly:
+
+1. Confirm every changed/created file is inside:
+   artifacts/smartmall-mobile/
+
+2. Confirm there are NO changes to:
+   - Laravel/backend
+   - Hostinger configuration
+   - artifacts/smartmall
+   - Checkout
+   - Orders logic
+   - Cart
+   - QR Scanner
+   - Notifications implementation
+   - Home
+   - Bottom Navigation structure
+   - package dependencies / lockfiles outside the intended mobile project
+
+3. Verify Profile API usage:
+   - GET /customer/profile
+   - PUT /customer/profile
+   - no invented endpoints
+   - no accidental use of /customer/orders
+   - no modification of production API contracts
+
+4. Verify profile editing:
+   - only name and email are editable
+   - phone/whatsapp/address/birthdate/gender/status are not editable
+   - no WhatsApp endpoint was added
+
+5. Verify logout:
+   - existing POST /logout remains unchanged
+   - SecureStore behavior remains unchanged
+   - auth state reset remains unchanged
+   - queryClient.clear() is the only cache-related addition
+   - no authentication redesign
+
+6. Verify navigation:
+   - Orders points to existing Orders route
+   - Notifications points to existing Notifications route
+   - no Complaints route was created
+   - Bottom Navigation remains exactly:
+     Home / Malls / Offers / Orders / Profile
+
+7. Verify i18n:
+   - existing changeAppLanguage() is reused
+   - no second language system
+   - no duplicate translation architecture
+
+8. Verify theme:
+   - no ThemeProvider
+   - no ThemeContext
+   - no theme store
+   - no new dependency
+   - Appearance.setColorScheme/useColorScheme integration only
+
+9. Verify RTL:
+   - no row-reverse
+   - no unnecessary hardcoded left/right positioning
+   - Arabic/LTR behavior follows the existing architecture
+
+10. Inspect for accidental changes or unrelated code.
+
+If everything is clean:
+- DO NOT change anything.
+- Report PASS.
+- List the exact changed files.
+- State explicitly that scope is clean and mobile-only.
+
+If you find a critical scope violation:
+- STOP.
+- Do not fix it automatically.
+- Report the violation and the exact file/change that caused it.
+
+STOP after Checkpoint 4.
+Do not run TypeScript, lint, Expo Doctor, builds, or other validation yet.

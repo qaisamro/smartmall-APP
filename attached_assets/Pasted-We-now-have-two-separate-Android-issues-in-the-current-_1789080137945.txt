@@ -1,0 +1,95 @@
+We now have two separate Android issues in the current SmartMall Expo app.
+
+ISSUE 1 — CHECKOUT:
+When attempting to place a test order, the mobile app shows:
+
+"تعذر العثور على نقطة النهاية أو المورد المطلوب"
+
+ISSUE 2 — QR SCANNER:
+The QR Scanner does not appear/open at all in the mobile app.
+
+IMPORTANT:
+This is a DIAGNOSIS AND MINIMAL FIX task only.
+
+Do NOT:
+
+* modify Laravel/backend code
+* modify database/migrations
+* change the existing production website
+* change CORS
+* change authentication
+* change Expo SDK
+* upgrade/downgrade dependencies
+* modify unrelated screens
+* start Phase 4
+* create a real production customer account
+* create a real production order unless absolutely required for controlled verification
+
+PART A — CHECKOUT
+
+1. Inspect the mobile checkout/order API implementation.
+2. Identify the exact URL/method currently used by the mobile app to place an order.
+3. Compare it with the actual Laravel routes currently available.
+4. Confirm whether the mobile app is calling:
+   POST /api/v1/customer/orders
+   or another endpoint.
+5. Check the request payload against the safe order-placement contract already implemented.
+6. Determine why the mobile app receives the "endpoint/resource not found" response.
+7. If the problem is mobile-only, make the smallest mobile-side correction necessary.
+8. Do NOT change the backend endpoint merely to accommodate an incorrect mobile URL.
+
+PART B — QR SCANNER
+
+1. Inspect the current mobile QR scanner implementation.
+2. Check:
+
+   * scanner route
+   * navigation/link/button that should open it
+   * Expo Camera / CameraView integration
+   * camera permission handling
+   * Android compatibility
+   * whether the scanner route is actually reachable from the current customer navigation
+3. Determine why the QR Scanner does not appear at all.
+4. If it is a mobile navigation/implementation issue, make the smallest fix necessary.
+5. Preserve the existing UI architecture and do not add unnecessary dependencies.
+
+IMPORTANT SECURITY:
+
+* Do not log passwords, tokens, or sensitive user data.
+* Do not weaken authentication or authorization.
+* Do not expose API credentials.
+
+VERIFICATION:
+
+For checkout:
+
+* Verify the exact endpoint/method.
+* Verify the app reaches the correct endpoint.
+* Do not create a real production order unless explicitly required and clearly controlled.
+* If a safe non-mutating endpoint check is possible, use it.
+
+For QR:
+
+* Verify the scanner route can be opened on Android Expo Go.
+* Verify camera permission is requested correctly.
+* Verify CameraView renders.
+* Verify no navigation/runtime error occurs.
+
+Run:
+
+* TypeScript validation
+* lint/static checks
+* Expo Android compatibility checks if available
+
+At the end report:
+
+1. Checkout root cause.
+2. Exact endpoint currently used.
+3. Actual Laravel endpoint.
+4. Files changed, if any.
+5. QR Scanner root cause.
+6. Files changed, if any.
+7. Verification results.
+8. Any remaining limitation.
+
+STOP after these two issues. Do not start another feature.

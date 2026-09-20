@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Laravel
+/storage/*.key
+storage/logs/
+bootstrap/cache/
+
+# Build output
+dist/
+build/
+.cache/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Sensitive / personal files
+mall account.txt
+# Generated files
+frontend/distN.tar.gz
+output/
+Amazon-Image-Scrapper/downloaded_images/
+IIBBBBB'
+
+# Generated files
+frontend/distN.tar.gz
+output/
+Amazon-Image-Scrapper/downloaded_images/
+I'
+IIBBBBB'

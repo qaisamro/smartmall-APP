@@ -1,0 +1,41 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: smart-mall-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/var/www/html
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+    depends_on:
+      - mysql
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: smart-mall-frontend
+    ports:
+      - "3000:5173"
+    volumes:
+      - ./frontend:/app
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000/api/v1
+
+  mysql:
+    image: mysql:8.0
+    container_name: smart-mall-db
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_DATABASE=smart_mall
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:

@@ -1,0 +1,137 @@
+Great. The read-only audit is complete.
+
+Now begin Phase 1 ONLY: create the foundation of a new independent SmartMall mobile application.
+
+IMPORTANT SAFETY RULES:
+
+- Do NOT modify the existing frontend.
+- Do NOT modify the existing Laravel backend.
+- Do NOT modify database migrations.
+- Do NOT delete, rename, or refactor existing files.
+- Do NOT modify the existing Capacitor application.
+- Do NOT break any existing website functionality.
+- Do NOT create duplicate backend APIs unless absolutely required.
+- Do NOT expose any backend secrets.
+- Do NOT copy browser-specific code from frontend into the mobile app.
+
+Create a NEW independent application at:
+
+/mobile
+
+Technology requirements:
+
+- React Native
+- Expo
+- TypeScript
+- Expo Router
+- Strict TypeScript
+- TanStack React Query
+- Zustand
+- Expo SecureStore
+- Axios
+- React Hook Form
+- Zod
+- Expo Camera
+- Expo Notifications
+- Expo Image
+- i18next/localization
+- EAS configuration
+
+The mobile app must communicate with the existing Laravel API:
+
+https://samrtmall.cloud/api/v1
+
+Do NOT hardcode this URL throughout the application.
+
+Create environment-based configuration so the API base URL can be configured for development/staging/production.
+
+Create:
+
+mobile/
+├── app/
+├── src/
+│   ├── api/
+│   ├── components/
+│   ├── features/
+│   ├── hooks/
+│   ├── i18n/
+│   ├── services/
+│   ├── store/
+│   ├── theme/
+│   ├── types/
+│   └── utils/
+├── assets/
+├── app.config.ts
+├── eas.json
+├── package.json
+├── tsconfig.json
+└── .env.example
+
+Architecture requirements:
+
+1. Central API client.
+2. Central API error handling.
+3. React Query configuration.
+4. Secure authentication storage abstraction using Expo SecureStore.
+5. Authentication state abstraction.
+6. Cart state abstraction.
+7. Image URL normalization service.
+8. Notification service abstraction.
+9. Deep-link service abstraction.
+10. i18n foundation with Arabic and English.
+11. RTL support.
+12. Light/dark theme foundation.
+13. Reusable loading, error, empty-state and button components.
+14. Navigation foundation using Expo Router.
+15. Proper TypeScript types.
+
+Authentication foundation:
+
+- Use the existing Laravel Sanctum bearer-token API.
+- Store access tokens only through Expo SecureStore.
+- Never store tokens in AsyncStorage.
+- Never store tokens in persisted Zustand state.
+- Never log tokens.
+- Create login/logout/session restoration abstractions.
+- Handle HTTP 401 centrally.
+- Do not implement Google OAuth yet.
+- Do not invent a refresh-token API.
+
+DO NOT build the following yet:
+
+- Home screen
+- Product screen
+- Mall screen
+- Cart UI
+- Checkout
+- Orders
+- Scanner UI
+- Push notification UI
+- Admin screens
+- Owner screens
+- Delivery screens
+
+Only create the clean mobile foundation.
+
+Before finishing:
+
+1. Install only the required dependencies.
+2. Verify TypeScript.
+3. Verify Expo project configuration.
+4. Verify Expo Router.
+5. Verify the application starts successfully.
+6. Verify Android/iOS-compatible code.
+7. Run available lint/type checks.
+8. Do not modify existing frontend/backend files.
+
+At the end, provide:
+
+A) Files created
+B) Dependencies installed
+C) Architecture explanation
+D) Commands used to verify the project
+E) Any warnings or issues
+F) Confirmation that frontend/backend were not modified
+
+Do not proceed to Phase 2 automatically.
+Stop after Phase 1 and wait for my approval.

@@ -1,0 +1,595 @@
+# SMARTMALL — PRODUCTION BACKEND SYNC AUDIT
+
+## PURPOSE
+
+This is a READ-ONLY production synchronization audit.
+
+The previous checkout audit discovered:
+
+* The local Laravel repository contains:
+  `POST /api/v1/customer/orders`
+* The production API:
+  `https://samrtmall.cloud/api/v1/customer/orders`
+  currently returns HTTP 404.
+* The local safe customer-order implementation includes:
+
+  * server-authoritative prices
+  * server-authoritative totals
+  * stock validation
+  * database transaction
+  * row locking
+  * idempotency
+  * customer ownership
+* The mobile app currently still uses the legacy:
+
+  * `POST /api/v1/orders/pending`
+  * `POST /api/v1/orders/pending/{id}/confirm`
+
+The objective of this task is to determine EXACTLY why production is behind the repository and exactly what would be required to safely synchronize production.
+
+==================================================
+ABSOLUTE RULE
+=============
+
+READ-ONLY ONLY.
+
+DO NOT:
+
+* deploy
+* upload files
+* modify Hostinger
+* modify production files
+* modify Laravel code
+* modify database
+* run migrations
+* restart production services
+* change environment variables
+* change routes
+* change DNS
+* change Apache/Nginx configuration
+* create users
+* create orders
+* modify products
+* modify stock
+* modify subscriptions
+* modify production data
+* call mutating production APIs
+* install dependencies
+* commit code
+* push code
+* merge code
+
+Do not make any production change.
+
+The purpose is ONLY to understand the difference between the repository and production.
+
+==================================================
+
+1. REPOSITORY BASELINE
+   ==================================================
+
+Inspect the current repository.
+
+Primary backend:
+
+services/smartmall-api
+
+Inspect:
+
+* routes/api.php
+* OrderController
+* PendingOrder model
+* Order model
+* relevant Form Requests
+* Services
+* Policies
+* Middleware
+* Resources
+* migrations
+* tests
+* configuration
+* composer.json
+* environment references
+
+Identify the exact implementation of:
+
+POST /api/v1/customer/orders
+
+Document:
+
+* route declaration
+* middleware
+* controller
+* method
+* request validation
+* service calls
+* transaction
+* stock locking
+* price calculation
+* total calculation
+* idempotency
+* order creation
+* order items
+* delivery
+* pickup
+* in-mall
+* direct purchase
+* response
+* authorization
+
+==================================================
+2. GIT HISTORY
+==============
+
+Inspect Git history to determine:
+
+* when `/customer/orders` was introduced
+* when the safe order implementation was introduced
+* whether it was ever deployed
+* whether there are deployment-related commits
+* whether production may intentionally be running an older commit
+* latest backend commit
+* latest known deployment commit if identifiable
+
+Report:
+
+CURRENT REPOSITORY COMMIT
+LATEST BACKEND CHANGE
+SAFE CHECKOUT INTRODUCTION COMMIT
+MIGRATION INTRODUCTION COMMIT
+RELEVANT DEPLOYMENT COMMITS
+
+Do not change Git history.
+
+==================================================
+3. PRODUCTION READ-ONLY VERIFICATION
+====================================
+
+Use ONLY non-mutating production requests.
+
+Check:
+
+GET https://samrtmall.cloud/
+
+GET https://samrtmall.cloud/api/v1/malls
+
+GET https://samrtmall.cloud/api/v1/offers
+
+GET https://samrtmall.cloud/api/v1/customer/orders
+
+If there are safe OPTIONS/HEAD checks available, they may also be used.
+
+Do NOT call:
+
+POST /customer/orders
+
+POST /orders/pending
+
+POST /orders
+
+PUT/PATCH/DELETE endpoints
+
+or any other mutating endpoint.
+
+For each production check record:
+
+* URL
+* HTTP method
+* status
+* response type
+* relevant headers
+* whether authentication is required
+* whether the route appears to exist
+
+Do not expose tokens or secrets.
+
+==================================================
+4. DETERMINE WHETHER PRODUCTION IS RUNNING OLD CODE
+===================================================
+
+Determine whether production appears to be running:
+
+A. an older Git commit
+
+B. a different backend directory
+
+C. a different Laravel application
+
+D. a different API version
+
+E. a stale deployment
+
+F. a deployment that failed
+
+G. a route/cache issue
+
+H. a web server configuration issue
+
+I. a separate production branch
+
+J. another unexplained deployment source
+
+Do not guess.
+
+Provide evidence.
+
+==================================================
+5. ROUTE DIFFERENCE ANALYSIS
+============================
+
+Compare:
+
+LOCAL ROUTES
+vs
+PRODUCTION ACCESSIBLE ROUTES
+
+Focus especially on:
+
+/api/v1/customer/orders
+
+Also inspect whether related customer routes are present in production:
+
+GET /api/v1/customer/purchases
+GET /api/v1/customer/orders/{id}
+GET /api/v1/customer/orders/tracking
+
+Use ONLY safe GET requests where possible.
+
+Determine whether:
+
+* only `/customer/orders` is missing
+* the entire customer order route group is missing
+* the entire newer API version is missing
+* route caching may be stale
+* production is serving another application
+
+==================================================
+6. MIGRATION ANALYSIS
+=====================
+
+Inspect the migration:
+
+2026_09_10_000001_add_client_request_id_to_orders_table.php
+
+Determine:
+
+* what database change it makes
+* whether the safe order implementation depends on it
+* whether the migration is required for idempotency
+* whether it is backward compatible
+* whether the existing website requires it
+* whether it affects existing orders
+* whether rollback is safe
+* whether there are other migrations required before it
+
+DO NOT run the migration.
+
+Do not modify the database.
+
+==================================================
+7. PRODUCTION DATABASE RISK ANALYSIS
+====================================
+
+Without modifying production, determine what database schema the safe checkout requires.
+
+Create:
+
+REQUIRED DATABASE CHANGES
+
+For each:
+
+TABLE
+COLUMN
+INDEX
+CONSTRAINT
+PURPOSE
+REQUIRED BY
+BACKWARD COMPATIBLE: YES/NO
+RISK
+
+Do not claim production schema status unless it can be safely verified.
+
+If production database schema cannot be inspected from the available environment, clearly state:
+
+"PRODUCTION SCHEMA NOT DIRECTLY VERIFIED"
+
+Do not guess.
+
+==================================================
+8. WEBSITE COMPATIBILITY ANALYSIS
+=================================
+
+This is extremely important.
+
+Determine whether deploying the safe customer-order backend could affect the existing website.
+
+Search the current web frontend for:
+
+* /orders/pending
+* /orders/pending/{id}/confirm
+* /customer/orders
+* /orders
+* checkout
+* order creation
+* order confirmation
+
+Determine which frontend currently uses which endpoint.
+
+Create:
+
+| Existing Flow | Endpoint | Consumer | Risk |
+| ------------- | -------- | -------- | ---- |
+
+Specifically determine:
+
+* Does the current website depend on the legacy pending flow?
+* Does the mobile app depend on it?
+* Can `/customer/orders` be added without removing the old flow?
+* Is the safe endpoint additive?
+* Could enabling it break existing website checkout?
+
+==================================================
+9. BACKWARD COMPATIBILITY
+=========================
+
+Determine whether the safest deployment strategy would be:
+
+OPTION A:
+Deploy safe endpoint alongside existing endpoints.
+
+OPTION B:
+Replace legacy endpoint.
+
+OPTION C:
+Deploy backend first, then migrate mobile.
+
+OPTION D:
+Backend migration + database migration.
+
+OPTION E:
+Other.
+
+Do NOT implement any option.
+
+Rank them:
+
+SAFEST
+SECOND SAFEST
+RISKIEST
+
+Explain why.
+
+==================================================
+10. DEPLOYMENT PATH ANALYSIS
+============================
+
+Inspect repository/deployment configuration ONLY.
+
+Look for:
+
+* Hostinger deployment configuration
+* GitHub Actions
+* deployment scripts
+* SSH scripts
+* Composer deployment
+* Laravel optimization commands
+* route cache
+* config cache
+* queue workers
+* cron
+* deployment documentation
+* branches
+* production environment references
+
+Determine how the production backend is likely deployed.
+
+Do not execute deployment commands.
+
+==================================================
+11. CACHE / ROUTE CACHE ANALYSIS
+================================
+
+Determine whether the 404 could theoretically be caused by:
+
+* Laravel route cache
+* config cache
+* application cache
+* stale PHP process
+* OPcache
+* wrong document root
+* wrong Laravel application
+* old deployment
+
+Do not clear any cache.
+
+Only report what should be checked.
+
+==================================================
+12. PRODUCTION CONFIGURATION RISKS
+==================================
+
+Do not reveal secrets.
+
+Do not print:
+
+* APP_KEY
+* database passwords
+* API keys
+* tokens
+* OAuth secrets
+* Cloudinary secrets
+* SMTP passwords
+* AWS secrets
+
+Only report whether relevant configuration appears present/missing if safely observable.
+
+==================================================
+13. SAFE DEPLOYMENT PLAN
+========================
+
+Based on the audit, create a proposed deployment plan WITHOUT executing it.
+
+The plan must include:
+
+STEP 1
+Repository backup/checkpoint
+
+STEP 2
+Verify production database compatibility
+
+STEP 3
+Verify migration requirements
+
+STEP 4
+Deploy backend code
+
+STEP 5
+Run only required migrations if approved
+
+STEP 6
+Refresh Laravel route/config cache if required
+
+STEP 7
+Verify safe endpoint
+
+STEP 8
+Verify existing legacy website checkout remains functional
+
+STEP 9
+Verify customer order authorization
+
+STEP 10
+Verify idempotency behavior
+
+STEP 11
+Only after backend is confirmed:
+migrate mobile checkout
+
+Do not execute any step.
+
+==================================================
+14. ROLLBACK PLAN
+=================
+
+Create a rollback plan.
+
+Explain:
+
+* code rollback
+* migration rollback considerations
+* route cache rollback
+* config cache
+* queue considerations
+* database safety
+* website compatibility
+
+Do not execute rollback.
+
+==================================================
+15. PRODUCTION SAFETY MATRIX
+============================
+
+Create:
+
+| Change                 | Production Risk | Reversible | Requires Approval |
+| ---------------------- | --------------- | ---------- | ----------------- |
+| Deploy safe route      |                 |            |                   |
+| Database migration     |                 |            |                   |
+| Route cache refresh    |                 |            |                   |
+| Config cache refresh   |                 |            |                   |
+| Keep legacy endpoint   |                 |            |                   |
+| Mobile endpoint switch |                 |            |                   |
+
+==================================================
+16. FINAL VERDICT
+=================
+
+Return one of:
+
+SAFE TO DEPLOY
+SAFE WITH CONDITIONS
+BLOCKED
+UNKNOWN — MORE ACCESS REQUIRED
+
+Do NOT choose SAFE TO DEPLOY unless the evidence supports it.
+
+==================================================
+17. REQUIRED FINAL REPORT
+=========================
+
+Return exactly:
+
+# SMARTMALL PRODUCTION BACKEND SYNC AUDIT
+
+## 1. Executive Summary
+
+## 2. Repository Backend State
+
+## 3. Production API State
+
+## 4. Repository vs Production Differences
+
+## 5. Safe Customer Order Endpoint Analysis
+
+## 6. Legacy Pending Order Analysis
+
+## 7. Database Migration Analysis
+
+## 8. Website Compatibility
+
+## 9. Mobile Compatibility
+
+## 10. Deployment Architecture
+
+## 11. Possible Cause of Production 404
+
+## 12. Production Risks
+
+## 13. Recommended Deployment Strategy
+
+## 14. Rollback Strategy
+
+## 15. Production Safety Matrix
+
+## 16. Required Changes
+
+## 17. Changes NOT Required
+
+## 18. Open Questions
+
+## 19. Final Verdict
+
+## 20. Evidence
+
+Include exact:
+
+* file paths
+* route paths
+* controller methods
+* migration names
+* relevant Git commits
+* safe production HTTP results
+
+==================================================
+18. FINAL STOP CONDITION
+========================
+
+STOP after the audit.
+
+Do NOT:
+
+* deploy
+* modify code
+* modify backend
+* modify database
+* migrate production
+* modify mobile
+* change checkout
+* fix cart isolation
+* run tests that mutate production
+
+The only desired output is the complete synchronization audit and deployment recommendation.
+
+FINAL STATUS MUST BE:
+
+AUDIT COMPLETE — WAITING FOR APPROVAL

@@ -1,0 +1,258 @@
+Checkpoint 3 — Implement Search & Discovery
+
+The architecture decision is approved.
+
+Now implement ONLY the approved Search & Discovery scope.
+
+IMPORTANT:
+- Modify only files under artifacts/smartmall-mobile.
+- Do NOT modify Laravel/backend.
+- Do NOT modify Hostinger.
+- Do NOT modify the existing website.
+- Do NOT modify Checkout, Orders, Cart, Scanner/QR, Notifications, Profile/Auth.
+- Do NOT modify Bottom Navigation structure.
+- Do NOT install dependencies.
+- Do NOT create new backend endpoints.
+- Do NOT use the legacy /search endpoint.
+- Do NOT rewrite the existing Mall Details catalog architecture.
+
+1. GLOBAL SEARCH
+
+Improve:
+artifacts/smartmall-mobile/app/(customer)/(tabs)/search.tsx
+
+Requirements:
+- Keep GET /api/v1/search/global?query=
+- Minimum 2 characters.
+- Keep 500ms debounce.
+- Keep AbortSignal cancellation.
+- Keep ['global-search', normalizedQuery].
+- Keep 30-second staleTime.
+- No pagination.
+- Keep grouped-by-mall results.
+- Add/ensure:
+  - clear search button
+  - loading state
+  - empty state
+  - error + retry
+  - keyboard submit/dismiss behavior
+  - proper Arabic/English product names
+  - proper RTL/LTR alignment
+  - product navigation to existing Product Details
+  - mall grouping remains visually clear
+
+Do not add search history, recent searches, trending searches, suggestions, or autocomplete.
+
+2. GLOBAL SEARCH MALL LOCALIZATION
+
+The production global-search response provides mall_name but does not guarantee both Arabic and English names.
+
+Keep the existing mall lookup approach, but optimize it:
+
+- Arabic mode:
+  use the global response mall_name directly.
+  Do NOT make the extra malls request only for localization.
+
+- English mode:
+  only perform the mall lookup when global results exist.
+  Reuse the shared/cached malls query.
+  Do not create duplicate requests.
+  Do not break existing cache behavior.
+
+Do not change the production API.
+
+3. MALLS TAB SEARCH
+
+Implement search in:
+
+artifacts/smartmall-mobile/app/(customer)/(tabs)/malls.tsx
+
+Use:
+GET /api/v1/malls?search=&type=
+
+Requirements:
+- 500ms debounce.
+- Preserve existing All / Mall / Supermarket filters.
+- Preserve existing mall cards.
+- Preserve existing mall navigation to:
+  /(customer)/mall/{slug}
+- Add:
+  - search input
+  - clear button
+  - loading state
+  - empty state
+  - error + retry
+  - pull-to-refresh
+- Arabic/English names.
+- RTL/LTR.
+- Do not add nearby/radius search.
+- Do not add Search to Bottom Navigation.
+
+4. MALLS QUERY/CACHE
+
+Update only if necessary:
+
+artifacts/smartmall-mobile/src/features/malls/useMallsHooks.ts
+
+Use the normalized cache key:
+
+['malls', { search: normalizedSearch, type: normalizedType }]
+
+Normalize empty values consistently so:
+
+useMalls()
+
+and
+
+useMalls({ search: '', type: '' })
+
+do not create unnecessary duplicate cache entries.
+
+When calling the API, omit empty query parameters.
+
+Keep existing 60-second staleTime.
+
+Do not invalidate unrelated queries when mall search/filter changes.
+
+5. MALL DETAILS
+
+Do NOT rewrite:
+
+artifacts/smartmall-mobile/app/(customer)/mall/[slug].tsx
+
+Do NOT change the existing catalog behavior unless a very small UX correction is required by this Search & Discovery implementation.
+
+Preserve:
+- product search
+- category filtering
+- section filtering
+- infinite pagination
+- mall sections
+- product navigation
+- existing API contracts
+- existing query architecture
+
+6. CATALOG/SEARCH HOOKS
+
+Only modify these if actually necessary:
+
+src/features/search/useSearchHooks.ts
+src/features/catalog/useCatalogHooks.ts
+
+Do not change API behavior unnecessarily.
+
+Keep:
+- debounce
+- AbortSignal
+- React Query caching
+- existing pagination
+- existing staleTime
+
+7. I18N
+
+Update only:
+
+artifacts/smartmall-mobile/src/i18n/index.ts
+
+Add only missing translations required for:
+- Search
+- Clear
+- Search malls
+- No results
+- Retry
+- Loading
+- relevant empty/error labels
+
+Arabic and English must both be supported.
+
+Do not alter existing translations unnecessarily.
+
+8. RTL
+
+Follow the existing RTL architecture.
+
+Do NOT use:
+row-reverse
+
+Do not use directional hacks.
+
+Verify:
+- search field
+- clear icon
+- mall cards
+- result groups
+- text alignment
+- icons
+- empty/error states
+
+work correctly in Arabic and English.
+
+9. PERFORMANCE
+
+Verify:
+- 500ms debounce
+- AbortSignal
+- React Query cache
+- no unnecessary duplicate requests
+- no global search under 2 characters
+- no extra English localization request before results exist
+- mall search does not cause unrelated queries
+- existing FlatList/list implementation remains appropriate
+
+Do not add FlashList or another dependency unless already installed and already used.
+
+10. SCOPE CHECK
+
+Before finishing, verify that the final diff contains ONLY approved mobile Search & Discovery changes.
+
+Explicitly verify that there are NO changes to:
+- backend
+- website
+- Hostinger configuration
+- Checkout
+- Orders
+- Cart
+- Scanner/QR
+- Notifications
+- Profile/Auth
+- Bottom Navigation structure
+- package.json
+- package-lock/yarn/pnpm lockfiles
+- new dependencies
+
+11. VALIDATION
+
+After implementation run:
+
+- TypeScript validation
+- ESLint
+- Expo Doctor
+- Android production bundle
+- iOS production bundle
+- route validation
+- RTL check ensuring no row-reverse
+- dependency-change check
+- git diff/scope verification
+- Metro/startup sanity check if appropriate
+
+If Expo Doctor reports the same pre-existing dependency drift from earlier phases, do NOT change dependencies to fix it. Report it as pre-existing technical debt.
+
+Do not modify unrelated code just to make Expo Doctor green.
+
+12. FINAL REPORT
+
+Return:
+
+A. Files changed
+B. Features implemented
+C. API endpoints used
+D. React Query keys/cache behavior
+E. RTL/i18n verification
+F. Performance verification
+G. Validation results
+H. Scope/diff verification
+I. Any remaining limitation
+
+STOP after reporting the results.
+
+Do NOT start another phase or implement Search History/Suggestions.

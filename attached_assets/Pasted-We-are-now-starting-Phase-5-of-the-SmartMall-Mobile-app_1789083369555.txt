@@ -1,0 +1,149 @@
+We are now starting Phase 5 of the SmartMall Mobile app.
+
+IMPORTANT RULES:
+
+* Work ONLY inside `artifacts/smartmall-mobile`.
+* DO NOT modify Laravel/backend code.
+* DO NOT modify Hostinger or production configuration.
+* DO NOT modify the existing website under `artifacts/smartmall`.
+* DO NOT modify Checkout, Orders, QR Scanner, Cart, or any already-stable Phase 1–4 functionality.
+* Reuse existing production API contracts. Do NOT invent new backend endpoints.
+* Keep the current working authentication, RTL/LTR, theme, navigation, and API client architecture.
+
+PHASE 5 — STEP 1:
+Build a professional Notifications feature for the customer mobile app.
+
+FIRST:
+Inspect the existing mobile project and the existing website/API implementation to determine:
+
+1. Whether a real notifications API already exists.
+2. The exact existing endpoint(s), HTTP methods, response shape, authentication requirements, and pagination behavior.
+3. How the existing website handles customer notifications.
+4. Whether unread/read state is already supported by the existing API.
+
+DO NOT change the backend to create missing endpoints.
+
+IMPLEMENT ONLY WHAT THE EXISTING PRODUCTION API SUPPORTS.
+
+Requirements:
+
+1. Notifications screen
+
+* Add a dedicated customer Notifications screen.
+* Professional native mobile UI.
+* Arabic RTL and English LTR.
+* Light and dark mode.
+* Safe-area aware.
+* Loading state.
+* Empty state.
+* Error state with retry.
+* Pull-to-refresh.
+* Pagination/infinite loading if the existing API supports it.
+
+2. Notification item
+   Each notification should use the real API data.
+
+* Clear title.
+* Message/body.
+* Date/time.
+* Read/unread visual state if supported by the API.
+* Appropriate icon/category when possible.
+* Entire row should have a suitable touch target.
+
+3. Read state
+   ONLY if the production API already supports marking notifications as read:
+
+* Implement the existing API behavior.
+* Optimistically update the UI only if safe.
+* Roll back on failure.
+* Do not invent a mark-read endpoint.
+
+4. Navigation
+
+* Notifications should open from the existing Home header notification button.
+* Keep the current Home design unchanged except for wiring the existing notification button to the new screen if necessary.
+* Do not add Notifications as a bottom-tab item.
+* Add a back navigation/header appropriate for the existing mobile design.
+
+5. Unread badge
+   If the existing API provides unread count/state:
+
+* Show an unread badge on the Home notification icon.
+* Keep it synchronized after refresh/read actions.
+  If the API does not provide this, do not fabricate an unread count.
+
+6. API architecture
+
+* Reuse the existing API client, authentication, React Query/query-client, error handling, i18n, theme, and types.
+* Keep API logic separate from UI.
+* Use TypeScript strict typing.
+* Avoid duplicated API logic.
+
+7. Performance
+
+* Do not refetch unnecessarily.
+* Use React Query caching/invalidation appropriately.
+* Cancel requests when appropriate.
+* Avoid unnecessary re-renders.
+
+8. Security
+
+* Never log authentication tokens.
+* Do not store tokens in AsyncStorage.
+* Follow the existing SecureStore/session architecture.
+
+9. RTL
+   IMPORTANT:
+
+* Arabic must be true RTL.
+* English must remain LTR.
+* Use `direction`, `paddingStart`, `paddingEnd`, and logical layout properties.
+* Do NOT use `row-reverse`.
+* Avoid hardcoded left/right positioning where possible.
+
+10. Scope control
+    Do NOT redesign Home.
+    Do NOT redesign the bottom navigation.
+    Do NOT touch Cart/Checkout/Orders/Scanner.
+    Do NOT touch production/backend code.
+    Do NOT add unnecessary dependencies.
+
+FILES:
+You may create the minimum necessary files inside:
+`artifacts/smartmall-mobile`
+
+Before coding:
+
+* Inspect the existing website notification implementation and existing production API contract.
+* Report the exact endpoint(s) you found and how they are used.
+* If no customer notification API exists, STOP and report that clearly instead of modifying the backend.
+
+After implementation:
+Run:
+
+* TypeScript validation
+* Lint
+* Expo Doctor
+* Android production bundle
+* iOS production bundle
+* `git diff --check`
+
+Also verify:
+
+* No changes outside `artifacts/smartmall-mobile`
+* No changes to backend
+* No changes to Checkout/Orders/Scanner
+* No new production API assumptions
+* No `row-reverse`
+* No React Native Router Slot warnings introduced
+
+Finally, provide:
+
+1. Files changed.
+2. Exact existing notification API endpoint(s) used.
+3. Features implemented.
+4. Validation results.
+5. Any limitations caused by the existing production API.
+6. A concise manual test checklist for Android Expo Go.
+
+Do NOT proceed to another Phase 5 feature after this task.

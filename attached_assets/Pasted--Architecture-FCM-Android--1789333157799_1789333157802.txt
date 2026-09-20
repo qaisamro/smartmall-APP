@@ -1,0 +1,1691 @@
+
+**الموضوع: الموافقة على Architecture FCM Android مع تعديلات طفيفة**
+
+---
+
+شكراً على التحليل المفصل والتقرير الشامل. أوافق على الـ Architecture المقترحة مع الملاحظات التالية:
+
+---
+
+### ✅ الموافقات النهائية
+
+| البند | القرار |
+|-------|--------|
+| جدول `fcm_tokens` منفصل | **موافق** - جدول منفصل مع schema المقترح |
+| استخدام `kreait/laravel-firebase` | **موافق** - لأنه أسهل في التنفيذ ويوفر وقت التطوير |
+| إبقاء Web Push كما هو | **موافق** - عدم تعديل `push_subscriptions` أو `PushNotificationService` |
+| عدم لمس iOS حالياً | **موافق** - Phase 3B يقتصر على Android فقط |
+| تعديلات إضافية فقط (Additive) | **موافق** - لا Refactoring للكود الحالي |
+| Git checkpoint قبل البدء | **موافق** - إنشاء branch جديد للتطوير |
+
+---
+
+### ⚠️ تعديلات مطلوبة على الخطة
+
+#### 1. بخصوص Firebase Project
+
+**ليس لدينا Firebase project جاهز حالياً.**
+
+المطلوب منك:
+- إنشاء Firebase project جديد باسم `smartmall-fcm` (أو أي اسم مناسب)
+- تزويدي بـ:
+  - `google-services.json` → يوضع في `frontend/android/app/`
+  - Service Account JSON → يوضع في `backend/storage/app/firebase.json` (هذا هو المفتاح السري، لا يوضع في Git)
+
+**ملاحظة مهمة:** تأكد من عدم الخلط بين الملفين:
+- `google-services.json` → خاص بتطبيق Android (يمكن وضعه في الـ repo)
+- Service Account JSON (firebase.json) → المفتاح السري (يُضاف إلى `.gitignore`)
+
+---
+
+#### 2. بخصوص AuthController@logout
+
+**لا نعدل AuthController@logout حالياً.**
+
+بدلاً من ذلك:
+- نعتمد على endpoint مستقل لحذف FCM token
+- الـ Frontend يستدعي `DELETE /push/fcm-token` عند logout
+- هذا يقلل التغيير في Authentication ويجنبنا مخاطر إضافية
+
+---
+
+#### 3. بخصوص Frontend Integration
+
+**التعديلات المطلوبة في Frontend:**
+
+```javascript
+// frontend/src/services/fcmService.js
+// أضف شرطاً إضافياً للتأكد من أن المستخدم مسجل دخوله قبل تسجيل FCM
+// لأن push/fcm-token يحتاج auth:sanctum
+
+export const initFcm = async () => {
+  if (!Capacitor.isNativePlatform()) return;
+  
+  // تحقق من وجود token أولاً
+  const token = localStorage.getItem('access_token');
+  if (!token) return; // لا نسجل FCM إذا كان المستخدم غير مسجل دخوله
+  
+  // باقي الكود كما هو مقترح...
+};
+```
+
+---
+
+#### 4. بخصوص Backend - إرسال الإشعارات
+
+**نحتاج توضيحاً بخصوص متى يتم إرسال FCM:**
+
+في كل مكان يُستدعى فيه `PushNotificationService::sendToUser` حالياً، نضيف بجانبه:
+
+```php
+// مثال: OrderController.php
+PushNotificationService::sendToUser($user, $title, $body, $url);
+FcmNotificationService::sendToUser($user, $title, $body, $url); // الجديد
+```
+
+**السؤال:** هل تفضل:
+- **الخيار A:** إرسال FCM بالتزامن مع Web Push (كلا القناتين)
+- **الخيار B:** إرسال FCM فقط إذا كان المستخدم لديه توكن FCM مسجل، وإلا يرسل Web Push فقط
+
+**أفضّل الخيار B** لتجنب إرسال إشعارات مكررة للمستخدمين الذين لديهم كلا القناتين.
+
+---
+
+#### 5. بخصوص الجدول - إضافة حقل
+
+**أضف حقل `app_version` إلى جدول `fcm_tokens`:**
+
+```php
+Schema::create('fcm_tokens', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+    $table->string('token', 512)->unique();
+    $table->string('platform', 20)->default('android');
+    $table->string('device_id')->nullable();
+    $table->string('app_version')->nullable(); // جديد
+    $table->timestamp('last_used_at')->nullable();
+    $table->timestamps();
+    $table->index(['user_id', 'platform']);
+});
+```
+
+**السبب:** لتتبع إصدار التطبيق عند تسجيل التوكن، مفيد لاحقاً لإرسال تحديثات قسرية أو تنبيهات الإصدار.
+
+---
+
+### 📋 خطة التنفيذ المقترحة
+
+#### Step 1: Firebase Setup (يقوم به AI)
+- إنشاء Firebase project
+- تفعيل Cloud Messaging (FCM)
+- تحميل `google-services.json`
+- تحميل Service Account JSON
+
+#### Step 2: Backend (يقوم به AI)
+- تثبيت `kreait/laravel-firebase`
+- إنشاء `fcm_tokens` migration
+- إنشاء `FcmNotificationService.php`
+- إنشاء `FcmTokenController.php`
+- إضافة Routes الجديدة
+- تعديل مواقع الإشعارات (OrderController, DeliveryController, AdminNotificationController)
+
+#### Step 3: Frontend (يقوم به AI)
+- إنشاء `fcmService.js`
+- تعديل `useAuthStore.js` لإضافة DELETE عند logout
+- استدعاء `initFcm()` في نقطة مناسبة (بعد login أو في App init)
+
+#### Step 4: Android (يقوم به AI)
+- إضافة `google-services.json` إلى `frontend/android/app/`
+- تثبيت `@capacitor/push-notifications`
+- إعداد AndroidManifest.xml
+- Build واختبار
+
+#### Step 5: Testing (يقوم به الفريق)
+- اختبار Web Push (يجب أن يستمر بالعمل)
+- اختبار Android FCM (يجب أن يعمل)
+- اختبار التبديل بين Web و Android
+- اختبار Logout (حذف التوكن)
+
+---
+
+### 📝 نقاط يجب توثيقها
+
+قبل البدء، أريد منك توثيق:
+
+1. **المتغيرات البيئية المطلوبة:**
+```
+# backend/.env
+FIREBASE_CREDENTIALS=storage/app/firebase.json
+FIREBASE_PROJECT_ID=smartmall-fcm
+```
+
+2. **الأمر لتثبيت الحزمة:**
+```bash
+composer require kreait/laravel-firebase
+```
+
+3. **الأمر لإنشاء الملفات:**
+```bash
+php artisan make:service FcmNotificationService
+php artisan make:controller API/v1/FcmTokenController
+```
+
+---
+
+### ❓ أسئلة قبل البدء
+
+1. **هل لديك حساب Firebase جاهز لإنشاء المشروع، أم تريد مني إنشاءه؟**
+
+2. **هل تفضل إرسال FCM بالتزامن مع Web Push (الخيار A) أم شرطياً (الخيار B)؟**
+
+3. **هل هناك أي صفحة أو ميزة معينة تريد اختبار الإشعارات فيها أولاً (مثلاً Order فقط) قبل تفعيلها في كل مكان؟**
+
+---
+
+### ✅ ملخص القرارات النهائية
+
+| البند | القرار |
+|-------|--------|
+| جدول fcm_tokens | ✅ موافق |
+| kreait/laravel-firebase | ✅ موافق |
+| Web Push يبقى كما هو | ✅ موافق |
+| Firebase project جديد | ✅ سأنشئه |
+| AuthController@logout | ❌ لا نعدله (استخدام endpoint مستقل) |
+| FCM عند Logout | ✅ عبر DELETE مستقل |
+| iOS | ❌ لا نلمسه حالياً |
+| Git checkpoint | ✅ نعم، قبل البدء |
+| Testing بعد كل مرحلة | ✅ نعم |
+
+---
+
+**يرجى تأكيد الاستلام والبدء في التنفيذ حسب الخطة أعلاه.**
+
+---
+
+### 📌 تذكير
+
+```
+🚨 أهم قاعدة: 
+لا تعدل أي كود يعمل بشكل صحيح إلا إذا كان التغيير ضرورياً لإضافة FCM.
+جميع التغييرات يجب أن تكون إضافية (Additive) وليست استبدالية (Replacements).
+```
+
+---
+
+# SMARTMALL — COMPLETE SYSTEM DISCOVERY, FEATURE & USER-FLOW DOCUMENTATION
+
+You are analyzing the COMPLETE existing SmartMall web application.
+
+Your task is NOT to modify, refactor, optimize, redesign, or fix the project.
+
+Your first and only task in this phase is:
+
+> READ → UNDERSTAND → TRACE → DOCUMENT → REPORT
+
+You must deeply inspect the entire existing project and produce a complete technical and functional map of how SmartMall works.
+
+Do NOT make any code changes.
+
+Do NOT install dependencies.
+
+Do NOT change configuration.
+
+Do NOT modify the database.
+
+Do NOT call destructive or mutating production APIs.
+
+Do NOT create users, orders, products, payments, complaints, or other production data.
+
+This is a READ-ONLY DISCOVERY AND DOCUMENTATION TASK.
+
+==================================================
+
+1. PROJECTS / SOURCES TO INSPECT
+   ==================================================
+
+Inspect every relevant part of the repository, including but not limited to:
+
+* Laravel backend
+* React/Vite frontend
+* API routes
+* Controllers
+* Models
+* Services
+* Repositories
+* Form Requests
+* Policies
+* Middleware
+* Resources
+* Events
+* Listeners
+* Jobs
+* Notifications
+* Commands
+* Database migrations
+* Seeders
+* Factories
+* Configuration
+* Authentication
+* Authorization
+* Role/permission systems
+* Storage
+* File uploads
+* Cloudinary integration
+* Google Drive integrations
+* WhatsApp integrations
+* Push notifications
+* QR/barcode functionality
+* POS functionality
+* Delivery functionality
+* Accounting
+* Subscriptions
+* Reports
+* Admin features
+* Owner features
+* Agent features
+* Tracker features
+* Customer features
+* Public/guest features
+* Web frontend
+* PWA functionality
+* Existing mobile/Capacitor-related code if present
+* Legacy/migration code if it explains current behavior
+* Relevant Git history when necessary to understand current behavior
+
+Also inspect:
+
+* package.json
+* composer.json
+* environment/config references
+* route definitions
+* frontend route definitions
+* API clients
+* hooks
+* state management
+* forms
+* tables
+* dashboards
+* modal/dialog systems
+* navigation
+* sidebar
+* permissions
+* feature flags
+* localization
+* Arabic/English behavior
+* RTL/LTR behavior
+
+==================================================
+2. FIRST — BUILD THE SYSTEM MAP
+===============================
+
+Before describing individual features, determine the complete architecture.
+
+Explain:
+
+Frontend:
+
+* framework
+* major modules
+* routing
+* state management
+* API communication
+* authentication state
+* caching
+* forms
+* validation
+* localization
+* UI component structure
+
+Backend:
+
+* framework/version
+* architecture
+* route structure
+* authentication
+* authorization
+* services
+* database architecture
+* storage
+* queues/jobs
+* notifications
+* integrations
+
+Database:
+
+* major tables
+* relationships
+* foreign keys
+* important fields
+* ownership relationships
+* status fields
+* important business rules
+
+Then create:
+
+SYSTEM ARCHITECTURE MAP
+
+Frontend
+↓
+API
+↓
+Authentication / Authorization
+↓
+Controllers
+↓
+Services / Business Logic
+↓
+Models
+↓
+Database
+
+Also document external integrations:
+
+SmartMall
+├── Frontend
+├── Laravel API
+├── Database
+├── Authentication
+├── Storage
+├── Cloudinary
+├── Google Drive
+├── Notifications
+├── WhatsApp
+├── POS / Printing
+├── Delivery
+└── Other integrations discovered
+
+==================================================
+3. IDENTIFY EVERY USER TYPE
+===========================
+
+Do NOT assume the roles.
+
+Discover them from the actual code.
+
+Create a complete role matrix.
+
+For EVERY role identify:
+
+* role name
+* how the user registers
+* how the user logs in
+* authentication method
+* dashboard
+* accessible pages
+* accessible APIs
+* permissions
+* restricted pages
+* restricted APIs
+* actions they can perform
+* data they can see
+* data they can modify
+* data they can delete
+* relationships to other users
+
+Potential roles may include:
+
+* Guest
+* Customer
+* Agent
+* Owner
+* Tracker
+* Admin
+* Super Admin
+* Delivery
+* Staff
+* Other roles discovered in the code
+
+IMPORTANT:
+
+Only document roles that actually exist or are clearly implemented.
+
+==================================================
+4. GUEST / PUBLIC USER
+======================
+
+Document everything a non-authenticated visitor can do.
+
+For example, investigate:
+
+* homepage
+* malls
+* products
+* categories
+* offers
+* search
+* product details
+* public statistics
+* home widgets
+* popups
+* registration
+* login
+* password reset
+* Google authentication
+* public QR/scanner functionality
+* any other public feature
+
+For each feature explain:
+
+1. Where the user starts
+2. What they click
+3. What page opens
+4. What API is called
+5. What data is returned
+6. What happens next
+7. What happens on error
+8. What authentication is required
+9. What database data is involved
+
+==================================================
+5. CUSTOMER — COMPLETE USER JOURNEY
+===================================
+
+Document the ENTIRE customer lifecycle from beginning to end.
+
+Example structure:
+
+CUSTOMER JOURNEY
+
+Registration
+↓
+Verification
+↓
+Login
+↓
+Homepage
+↓
+Mall discovery
+↓
+Mall details
+↓
+Categories
+↓
+Products
+↓
+Product details
+↓
+Cart
+↓
+Checkout
+↓
+Order creation
+↓
+Order confirmation
+↓
+Order tracking
+↓
+Notifications
+↓
+Order history
+↓
+Profile
+↓
+Support / Complaints
+↓
+Logout
+
+Do NOT assume this exact flow.
+
+Trace the actual implementation.
+
+For EVERY customer feature document:
+
+### A. Registration
+
+* page
+* fields
+* validation
+* API
+* backend controller
+* database table
+* created records
+* role assignment
+* verification
+* errors
+* success behavior
+
+### B. Login
+
+* fields
+* validation
+* API
+* authentication mechanism
+* token/session handling
+* role handling
+* redirect
+* errors
+* persistence
+
+### C. Homepage
+
+Document every section.
+
+For each section:
+
+* UI component
+* API
+* database source
+* conditions
+* sorting
+* limits
+* navigation
+* personalization
+
+### D. Mall Discovery
+
+Explain:
+
+* mall list
+* search
+* filters
+* location/radius if implemented
+* mall type
+* mall details
+* sections
+* shelves
+* products
+
+### E. Product Discovery
+
+Explain:
+
+* product listing
+* categories
+* sections
+* search
+* filters
+* pagination
+* sorting
+* stock
+* price
+* images
+* variants/options
+* product details
+
+### F. Cart
+
+Trace:
+
+Add product
+↓
+Quantity change
+↓
+Remove
+↓
+Persistence
+↓
+Authentication relationship
+↓
+Checkout preparation
+
+Document exactly where cart data is stored:
+
+* database
+* local storage
+* AsyncStorage
+* Zustand
+* session
+* cookies
+* other
+
+### G. Checkout
+
+This is extremely important.
+
+Trace the COMPLETE checkout lifecycle.
+
+Document:
+
+* checkout screen
+* cart validation
+* product validation
+* stock validation
+* prices
+* discounts
+* totals
+* delivery
+* pickup
+* in-mall orders
+* delivery zones
+* delivery fees
+* address
+* notes
+* payment
+* order creation
+* order confirmation
+* order status
+* notifications
+
+For every API involved provide:
+
+METHOD
+ENDPOINT
+AUTHENTICATION
+REQUEST
+VALIDATION
+SERVER LOGIC
+DATABASE CHANGES
+RESPONSE
+ERRORS
+
+Also identify whether prices/totals are calculated:
+
+* client-side
+* server-side
+* both
+
+### H. Orders
+
+Document:
+
+* order list
+* order details
+* pending orders
+* confirmation
+* status changes
+* tracking
+* cancellation
+* reorder
+* QR confirmation
+* pickup
+* delivery
+* in-mall purchases
+
+Trace the complete lifecycle:
+
+Created
+→ Pending
+→ Confirmed
+→ Accepted
+→ Processing
+→ Ready
+→ Out for delivery
+→ Delivered
+→ Completed
+
+BUT only include statuses that actually exist in the implementation.
+
+### I. Notifications
+
+Document:
+
+* notification creation
+* notification storage
+* notification list
+* unread count
+* mark read
+* mark all read
+* push notifications
+* web notifications
+* mobile notifications
+* notification triggers
+* deep links
+* actions
+
+### J. Profile
+
+Document:
+
+* profile view
+* editing
+* name
+* email
+* phone
+* WhatsApp
+* password
+* address
+* profile completion
+* avatar
+* preferences
+* language
+* logout
+
+Only document fields actually supported.
+
+### K. Complaints / Support
+
+If implemented, trace:
+
+Customer
+→ Complaint
+→ Complaint status
+→ Messages
+→ Staff/Admin response
+→ Notifications
+→ Resolution
+
+Document every API and database table.
+
+==================================================
+6. AGENT ROLE
+=============
+
+Perform a complete analysis of the Agent role.
+
+Explain:
+
+* registration
+* login
+* dashboard
+* assigned mall
+* incoming orders
+* order acceptance
+* order rejection
+* order processing
+* status updates
+* customer information
+* delivery/pickup
+* QR scanning
+* order history
+* statistics
+* notifications
+* profile
+* permissions
+
+For each action:
+
+UI
+→ API
+→ Controller
+→ Service
+→ Database
+→ Response
+→ UI update
+
+==================================================
+7. OWNER / MALL OWNER ROLE
+==========================
+
+Document the complete Owner experience.
+
+Investigate:
+
+* dashboard
+* mall management
+* mall settings
+* themes
+* products
+* categories
+* sections
+* shelves
+* inventory
+* stock
+* prices
+* offers
+* home sections
+* popups
+* QR generation
+* POS
+* orders
+* accounting
+* subscriptions
+* delivery
+* employees/agents
+* reports
+* statistics
+* notifications
+* settings
+
+For each feature document exact behavior.
+
+==================================================
+8. TRACKER / DELIVERY ROLE
+==========================
+
+If implemented, document separately.
+
+Tracker:
+
+* login
+* dashboard
+* order search
+* filters
+* assigned orders
+* order status
+* customer information
+* delivery information
+* tracking
+* notifications
+* permissions
+
+Delivery:
+
+* login
+* assigned deliveries
+* delivery status
+* customer
+* address
+* order
+* confirmation
+* proof of delivery
+* QR
+* notifications
+
+Again, only document what actually exists.
+
+==================================================
+9. ADMIN / SUPER ADMIN
+======================
+
+Document the ENTIRE administrative system.
+
+Do not summarize it as "admin can manage everything."
+
+Break it into individual modules.
+
+For example:
+
+Dashboard
+Users
+Roles
+Permissions
+Malls
+Mall owners
+Agents
+Customers
+Products
+Categories
+Sections
+Shelves
+Orders
+Offers
+Subscriptions
+Accounting
+Delivery
+Reports
+Notifications
+Broadcasts
+Complaints
+Home widgets
+Popups
+QR codes
+System health
+Activity logs
+Settings
+Integrations
+Storage
+Backups
+Other modules discovered
+
+For EVERY admin module document:
+
+* page
+* purpose
+* filters
+* search
+* tables
+* create
+* view
+* edit
+* delete
+* bulk actions
+* import/export
+* API
+* permissions
+* validation
+* database tables
+* side effects
+* notifications
+
+==================================================
+10. EVERY SCREEN / PAGE INVENTORY
+=================================
+
+Create a complete page inventory.
+
+Columns:
+
+ROLE
+PAGE
+ROUTE
+PURPOSE
+AUTH REQUIRED
+API USED
+MAIN ACTIONS
+RELATED DATABASE TABLES
+PERMISSIONS
+STATUS
+
+Do not miss hidden routes.
+
+Inspect the frontend route tree and backend routes.
+
+==================================================
+11. COMPLETE API INVENTORY
+==========================
+
+Create a complete API catalog.
+
+For EVERY API endpoint:
+
+METHOD
+ENDPOINT
+AUTH REQUIRED
+ROLE
+PURPOSE
+REQUEST PARAMETERS
+REQUEST BODY
+VALIDATION
+CONTROLLER
+SERVICE
+DATABASE TABLES
+RESPONSE
+ERROR RESPONSES
+SIDE EFFECTS
+USED BY FRONTEND
+USED BY WHICH ROLE
+
+Group by:
+
+Authentication
+Public
+Customer
+Agent
+Owner
+Delivery
+Tracker
+Admin
+Notifications
+Orders
+Products
+Malls
+Search
+Payments
+Reports
+Accounting
+Other
+
+==================================================
+12. DATABASE BUSINESS LOGIC
+===========================
+
+Do not merely list database tables.
+
+Explain business relationships.
+
+For example:
+
+Customer
+→ Orders
+→ Order Items
+→ Products
+→ Mall
+→ Owner
+
+Agent
+→ Mall
+→ Orders
+
+Owner
+→ Mall
+→ Products
+→ Agents
+
+Order
+→ Customer
+→ Mall
+→ Items
+→ Delivery
+→ Status
+→ Notifications
+
+Only use relationships actually confirmed by the code.
+
+Create an ER-style textual explanation.
+
+==================================================
+13. COMPLETE ORDER LIFECYCLE
+============================
+
+This must be one of the most detailed sections.
+
+Trace an order from:
+
+Customer action
+↓
+Frontend request
+↓
+API endpoint
+↓
+Authentication
+↓
+Validation
+↓
+Controller
+↓
+Service
+↓
+Database transaction
+↓
+Order record
+↓
+Order items
+↓
+Stock
+↓
+Mall/Agent
+↓
+Status changes
+↓
+Notifications
+↓
+Delivery/Pickup
+↓
+Completion
+
+For each stage explain:
+
+* exact file
+* exact method
+* API
+* database changes
+* user-visible result
+* failure scenarios
+
+Also identify:
+
+* duplicate-order risks
+* transaction boundaries
+* authorization risks
+* retry behavior
+* ownership checks
+* stock race conditions
+* price authority
+* partial failures
+
+Do NOT fix anything. Only report.
+
+==================================================
+14. COMPLETE PRODUCT LIFECYCLE
+==============================
+
+Trace:
+
+Product creation
+→ image upload
+→ storage
+→ category
+→ section
+→ shelf
+→ mall
+→ price
+→ stock
+→ offer
+→ customer discovery
+→ cart
+→ order
+→ inventory changes
+
+Explain every stage.
+
+==================================================
+15. COMPLETE MALL LIFECYCLE
+===========================
+
+Trace:
+
+Mall creation
+→ owner
+→ settings
+→ categories
+→ sections
+→ shelves
+→ products
+→ agents
+→ delivery
+→ orders
+→ reports
+→ subscription
+→ public customer view
+
+==================================================
+16. AUTHENTICATION & SECURITY
+=============================
+
+Deeply inspect:
+
+* Sanctum/session/token
+* password hashing
+* login
+* logout
+* password reset
+* Google OAuth
+* role checks
+* middleware
+* policies
+* ownership checks
+* API authorization
+* public endpoints
+* protected endpoints
+* rate limiting
+* file upload security
+* validation
+* CSRF
+* CORS
+* sensitive data exposure
+
+Identify any suspicious or inconsistent authorization behavior.
+
+DO NOT exploit anything.
+
+Only document findings.
+
+Classify:
+
+CRITICAL
+HIGH
+MEDIUM
+LOW
+INFO
+
+==================================================
+17. NOTIFICATIONS & EVENTS
+==========================
+
+Trace every important event:
+
+What causes it?
+Who receives it?
+How is it stored?
+How is it delivered?
+Which API retrieves it?
+Which UI displays it?
+
+Create:
+
+EVENT
+→ TRIGGER
+→ BACKEND LOGIC
+→ DATABASE
+→ RECIPIENT
+→ NOTIFICATION
+→ UI
+
+==================================================
+18. FILES / IMAGES / STORAGE
+============================
+
+Document:
+
+* local storage
+* Cloudinary
+* uploads
+* product images
+* profile images
+* documents
+* generated files
+* QR images
+* backups
+* Google Drive
+* naming conventions
+* cleanup behavior
+
+==================================================
+19. SEARCH SYSTEM
+=================
+
+Document every search system.
+
+For each:
+
+* endpoint
+* query parameters
+* tables searched
+* filters
+* pagination
+* sorting
+* result limit
+* frontend page
+* role
+* performance behavior
+
+Differentiate:
+
+* global search
+* mall search
+* product search
+* admin search
+* order search
+* user search
+* tracker search
+* any other search
+
+==================================================
+20. REPORTS / ACCOUNTING / SUBSCRIPTIONS
+========================================
+
+Document every business/financial module.
+
+For each:
+
+* who can access it
+* what data it uses
+* calculations
+* APIs
+* database tables
+* exports
+* reports
+* statuses
+* billing/subscription behavior
+
+Do NOT infer financial logic that is not implemented.
+
+==================================================
+21. FRONTEND → API → BACKEND TRACE
+==================================
+
+For every major feature produce a trace like:
+
+USER ACTION
+↓
+React Component
+↓
+Hook / State
+↓
+API Client
+↓
+HTTP METHOD + ENDPOINT
+↓
+Laravel Route
+↓
+Middleware
+↓
+Controller
+↓
+Service
+↓
+Model
+↓
+Database
+↓
+Response
+↓
+React State
+↓
+UI
+
+This must be based on actual files.
+
+Include file paths and function/method names wherever possible.
+
+==================================================
+22. ERROR / FAILURE FLOWS
+=========================
+
+For each major feature document:
+
+Happy path
+Failure path
+Validation failure
+Authentication failure
+Authorization failure
+Network/API failure
+Database failure
+Empty state
+Loading state
+
+Especially:
+
+* login
+* registration
+* product loading
+* cart
+* checkout
+* order creation
+* order status
+* delivery
+* notifications
+* uploads
+* admin operations
+
+==================================================
+23. LOCALIZATION
+================
+
+Document:
+
+* Arabic
+* English
+* translation architecture
+* RTL
+* LTR
+* localized database content
+* date/time formatting
+* currency
+* validation messages
+* API localized responses if applicable
+
+==================================================
+24. FEATURE MATRIX
+==================
+
+Create a final matrix:
+
+| Feature | Guest | Customer | Agent | Owner | Tracker | Delivery | Admin |
+| ------- | ----- | -------- | ----- | ----- | ------- | -------- | ----- |
+
+Mark:
+
+✅ Fully available
+🟡 Partially available
+❌ Not available
+🔒 Restricted
+
+Only use evidence from the code.
+
+==================================================
+25. MISSING / INCOMPLETE FEATURES
+=================================
+
+Identify:
+
+* implemented
+* partially implemented
+* frontend only
+* backend only
+* unused API
+* dead UI
+* dead API
+* legacy flow
+* duplicated functionality
+* inconsistent behavior
+* unfinished functionality
+
+IMPORTANT:
+
+Do not automatically classify unused code as broken.
+
+Explain the evidence.
+
+==================================================
+26. SECURITY / BUSINESS RISK REPORT
+===================================
+
+Create a separate section:
+
+CRITICAL
+HIGH
+MEDIUM
+LOW
+
+Look specifically for:
+
+* authorization gaps
+* ownership gaps
+* insecure endpoints
+* client-trusted prices
+* duplicate orders
+* race conditions
+* unprotected destructive endpoints
+* exposed sensitive data
+* unsafe file uploads
+* weak role enforcement
+* inconsistent API protection
+* production configuration risks
+
+Do not exploit anything.
+
+==================================================
+27. PERFORMANCE / ARCHITECTURE OBSERVATIONS
+===========================================
+
+Without changing anything, identify:
+
+* large API responses
+* unnecessary API calls
+* N+1 queries
+* missing pagination
+* large frontend bundles
+* expensive rendering
+* duplicate requests
+* unnecessary database queries
+* inefficient search
+* unoptimized images
+* caching opportunities
+* queue opportunities
+
+Do not implement optimizations.
+
+==================================================
+28. FINAL USER JOURNEYS
+=======================
+
+Create detailed step-by-step journeys for:
+
+1. Guest
+2. Customer
+3. Agent
+4. Mall Owner
+5. Tracker
+6. Delivery
+7. Admin
+8. Super Admin
+9. Any additional role discovered
+
+Each journey must look like:
+
+STEP 1
+User opens...
+
+STEP 2
+User clicks...
+
+STEP 3
+Frontend loads...
+
+STEP 4
+API request...
+
+STEP 5
+Backend validates...
+
+STEP 6
+Database...
+
+STEP 7
+Response...
+
+STEP 8
+UI changes...
+
+Continue until the complete workflow is finished.
+
+==================================================
+29. FINAL DOCUMENTATION STRUCTURE
+=================================
+
+Return one comprehensive report with this exact structure:
+
+# SMARTMALL COMPLETE SYSTEM DOCUMENTATION
+
+## 1. Executive Summary
+
+## 2. System Architecture
+
+## 3. Technology Stack
+
+## 4. Repository Structure
+
+## 5. User Roles
+
+## 6. Permission Matrix
+
+## 7. Guest Journey
+
+## 8. Customer Journey
+
+## 9. Agent Journey
+
+## 10. Mall Owner Journey
+
+## 11. Tracker Journey
+
+## 12. Delivery Journey
+
+## 13. Admin Journey
+
+## 14. Super Admin Journey
+
+## 15. Complete Page Inventory
+
+## 16. Complete API Inventory
+
+## 17. Database Architecture
+
+## 18. Database Relationships
+
+## 19. Complete Customer Lifecycle
+
+## 20. Complete Product Lifecycle
+
+## 21. Complete Mall Lifecycle
+
+## 22. Complete Order Lifecycle
+
+## 23. Cart & Checkout Architecture
+
+## 24. Notifications & Events
+
+## 25. Search Architecture
+
+## 26. File & Storage Architecture
+
+## 27. Authentication & Authorization
+
+## 28. Security Findings
+
+## 29. Error & Failure Flows
+
+## 30. Localization / RTL / LTR
+
+## 31. Reports / Accounting / Subscriptions
+
+## 32. Frontend → API → Backend Traces
+
+## 33. Feature Matrix
+
+## 34. Implemented Features
+
+## 35. Partial Features
+
+## 36. Missing Features
+
+## 37. Legacy / Duplicate Flows
+
+## 38. Performance Observations
+
+## 39. Business Logic Rules
+
+## 40. Critical Risks
+
+## 41. Recommended Priorities
+
+## 42. Complete System Summary
+
+==================================================
+30. EVIDENCE REQUIREMENT
+========================
+
+Every important conclusion must be backed by actual project evidence.
+
+Whenever possible include:
+
+* file path
+* class
+* method/function
+* route
+* API endpoint
+* database table
+
+Example:
+
+Frontend:
+artifacts/smartmall/src/pages/...
+
+API:
+GET /api/v1/...
+
+Backend:
+services/smartmall-api/app/Http/Controllers/...
+
+Method:
+OrderController::store()
+
+Database:
+orders
+order_items
+
+Do NOT make assumptions.
+
+If something cannot be confirmed, write:
+
+"NOT CONFIRMED FROM CURRENT SOURCE"
+
+instead of guessing.
+
+==================================================
+31. IMPORTANT FINAL RULES
+=========================
+
+READ-ONLY.
+
+NO CODE CHANGES.
+
+NO REFACTORING.
+
+NO DEPENDENCY INSTALLATION.
+
+NO DATABASE MODIFICATIONS.
+
+NO PRODUCTION MUTATIONS.
+
+NO TEST ORDERS.
+
+NO TEST USERS.
+
+NO TEST PRODUCTS.
+
+NO DEPLOYMENT.
+
+NO AUTOMATIC FIXES.
+
+Do not stop after inspecting only the frontend.
+
+Do not stop after inspecting only Laravel.
+
+The objective is to understand the COMPLETE SmartMall system.
+
+If the repository is large, inspect it systematically in multiple passes.
+
+Prioritize correctness and completeness over speed.
+
+At the end explicitly state:
+
+AUDIT STATUS:
+COMPLETE / PARTIAL
+
+SOURCE COVERAGE:
+
+* Frontend
+* Backend
+* Database
+* API
+* Authentication
+* Roles
+* Integrations
+* Production read-only verification
+
+Also provide:
+
+FILES INSPECTED
+ROUTES INSPECTED
+API ENDPOINTS INSPECTED
+DATABASE TABLES INSPECTED
+USER ROLES IDENTIFIED
+FEATURES IDENTIFIED
+OPEN QUESTIONS
+UNCONFIRMED BEHAVIOR
+
+Do NOT proceed to implementation after this report.
+
+STOP.

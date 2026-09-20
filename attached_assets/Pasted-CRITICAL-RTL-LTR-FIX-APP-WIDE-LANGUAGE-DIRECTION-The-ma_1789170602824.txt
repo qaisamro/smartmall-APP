@@ -1,0 +1,283 @@
+CRITICAL RTL/LTR FIX — APP-WIDE LANGUAGE DIRECTION
+
+The manual device test revealed a global issue:
+
+When the app language is Arabic, the entire mobile application is still laid out visually as LTR like English.
+
+This is incorrect.
+
+Required behavior:
+
+Arabic:
+- Entire application = RTL
+- Layout direction = right-to-left
+- Text direction = right-to-left
+- Text alignment = right where appropriate
+- Navigation/layout ordering = RTL
+- Headers = RTL
+- Cards/content = RTL
+- Forms/inputs = RTL
+- Search = RTL
+- Buttons/actions = RTL-aware
+- Icons and directional controls must be positioned appropriately
+- Bottom navigation must behave correctly for RTL
+- Lists and horizontal controls must respect RTL
+- All screens must follow the same direction
+
+English:
+- Entire application = LTR
+- Layout direction = left-to-right
+- Text direction = left-to-right
+- Existing English layout must remain correct
+
+IMPORTANT:
+Do NOT fix this by adding individual row-reverse styles.
+Do NOT patch every screen independently.
+Do NOT create a second RTL architecture.
+
+Use the EXISTING i18n/language architecture and make the global direction handling correct.
+
+1. FIRST INSPECT THE CURRENT RTL IMPLEMENTATION
+
+Inspect:
+- i18n initialization
+- language switching
+- I18nManager usage
+- reloadAppAsync / app reload behavior
+- root app layout
+- Expo Router root layout
+- customer/auth layouts
+- tab layout
+- theme/direction utilities
+- any existing direction helpers
+
+Determine why changing Arabic/English currently changes translations but does NOT correctly change the complete application layout direction.
+
+Do not modify anything until this diagnosis is clear.
+
+2. GLOBAL DIRECTION REQUIREMENT
+
+Implement one centralized direction strategy:
+
+Arabic:
+I18nManager.isRTL === true
+
+English:
+I18nManager.isRTL === false
+
+The direction must be established at the application/root level, not independently on individual screens.
+
+Use the existing Expo/React Native supported RTL mechanism.
+
+Do not introduce a new dependency.
+
+3. LANGUAGE SWITCHING
+
+When the user switches:
+
+English → Arabic:
+- language changes to Arabic
+- application direction changes to RTL
+- application reloads/restarts if required by React Native/I18nManager
+- after reload, the entire app is RTL
+
+Arabic → English:
+- language changes to English
+- application direction changes to LTR
+- application reloads/restarts if required
+- after reload, the entire app is LTR
+
+Do not leave the application in the previous direction after changing language.
+
+4. ROOT / ROUTER
+
+Audit the root layout:
+
+artifacts/smartmall-mobile/app/_layout.tsx
+
+and all relevant nested layouts.
+
+Ensure the direction is applied globally before screens render.
+
+Do not add screen-specific direction hacks unless a component genuinely requires a local direction override.
+
+5. BOTTOM NAVIGATION
+
+Verify the existing:
+
+Home / Malls / Offers / Orders / Profile
+
+navigation works correctly in both directions.
+
+Arabic must use the application's RTL behavior naturally.
+English must remain LTR.
+
+Do NOT change the number/order/meaning of the tabs unless required by the existing RTL architecture.
+
+6. ALL EXISTING SCREENS
+
+This is an app-wide direction fix.
+
+Audit representative screens from:
+
+- Auth/Login/Register
+- Home
+- Malls
+- Mall Details
+- Search
+- Product Details
+- Cart
+- Checkout
+- Orders
+- Order Details
+- Notifications
+- Profile
+- Edit Profile
+- Scanner
+- Offers
+
+The goal is NOT to redesign these screens.
+
+The goal is to ensure the global direction mechanism controls their layout correctly.
+
+Remove only incorrect local LTR assumptions if they prevent the global RTL system from working.
+
+7. TEXT DIRECTION
+
+Do not assume that translating strings is enough.
+
+For Arabic:
+- Text must actually render RTL.
+- Inputs must use RTL text direction.
+- Multiline text must behave RTL.
+- Numeric values/phone/email fields may remain naturally LTR where appropriate.
+- URLs/emails should remain LTR where technically appropriate.
+
+For English:
+- normal LTR behavior.
+
+Do not force every field to RTL when the content is inherently LTR.
+
+8. EXISTING SEARCH & MALL FIXES
+
+Do NOT undo the fixes already made for:
+- Search
+- Malls
+- filter chips
+- translations
+- debounce
+- API behavior
+
+The global direction fix should make those screens work naturally rather than adding more local hacks.
+
+9. TRANSLATIONS
+
+This task is primarily about direction.
+
+Do NOT rewrite translations unnecessarily.
+
+Do not introduce hardcoded Arabic/English strings.
+
+Keep using the existing i18n system.
+
+10. SCOPE
+
+This is an app-wide RTL infrastructure correction, so changes may be required in the root/i18n/direction architecture.
+
+However:
+
+DO NOT modify:
+- Laravel/backend
+- Hostinger
+- production website
+- APIs
+- package.json
+- lockfiles
+- dependencies
+- Checkout business logic
+- Orders business logic
+- Cart business logic
+- Scanner API
+- Notifications API
+- Profile API
+- authentication API
+
+Only modify mobile app direction/language infrastructure and the minimum affected UI files.
+
+11. IMPORTANT — DO NOT MASK THE PROBLEM
+
+Do NOT simply add:
+
+flexDirection: 'row-reverse'
+
+throughout the application.
+
+Do NOT add dozens of manual RTL styles.
+
+Do NOT claim RTL is fixed just because text-align changed.
+
+The requirement is true application-level RTL/LTR behavior.
+
+12. VALIDATION
+
+After implementation:
+
+- TypeScript
+- ESLint
+- Expo web export
+- Android production bundle
+- iOS production bundle
+- RTL audit
+- Search/Malls translation audit
+- no row-reverse hack scan
+- git diff --check
+- scope verification
+
+Also explicitly verify:
+
+Arabic:
+I18nManager.isRTL === true
+
+English:
+I18nManager.isRTL === false
+
+13. DEVICE TEST REQUIREMENT
+
+This issue was discovered through actual device testing.
+
+Therefore static validation alone is NOT enough.
+
+The final report must clearly state that the following need to be manually tested in Expo Go:
+
+Arabic:
+- Login
+- Home
+- Malls
+- Search
+- Product
+- Cart
+- Orders
+- Notifications
+- Profile
+
+English:
+- same representative screens
+
+Especially verify that changing language actually changes the COMPLETE application direction.
+
+Do not close the RTL issue based only on web preview.
+
+14. FINAL REPORT
+
+Return:
+
+A. Root cause
+B. Exact files changed
+C. Global RTL/LTR architecture used
+D. Language-switch behavior
+E. Screens/layouts affected
+F. Validation results
+G. Confirmation that no backend/dependencies were changed
+H. Manual device test still required
+
+STOP after this task.

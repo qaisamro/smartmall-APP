@@ -1,0 +1,380 @@
+We are continuing Phase 5 of the SmartMall Mobile app.
+
+PHASE 5 — STEP 2:
+Build the professional Customer Profile & Account experience.
+
+IMPORTANT RULES:
+
+* Work ONLY inside `artifacts/smartmall-mobile`.
+* DO NOT modify Laravel/backend code.
+* DO NOT modify Hostinger or production configuration.
+* DO NOT modify the existing website under `artifacts/smartmall`.
+* DO NOT modify Checkout, Orders, Cart, QR Scanner, Notifications, or any already-stable functionality except minimal navigation/cache wiring if absolutely necessary.
+* DO NOT invent API endpoints.
+* Reuse ONLY existing production API contracts.
+* Do not add unnecessary dependencies.
+* Preserve the current Expo/React Native architecture.
+
+FIRST — INSPECT BEFORE CODING:
+
+Inspect:
+
+1. The existing mobile authentication/user implementation.
+2. The existing `/me` or current-user API implementation.
+3. The existing website profile/account implementation.
+4. Existing production Laravel routes related to the authenticated customer profile.
+5. Existing logout behavior.
+6. Existing language/theme/session architecture.
+
+Before making changes, report:
+
+* Exact existing API endpoint(s) available for customer profile.
+* HTTP methods.
+* Request/response shapes.
+* Whether profile update is supported.
+* Whether password change is supported.
+* Exact logout behavior.
+* Any production limitations.
+
+DO NOT create or modify backend endpoints.
+
+---
+
+1. PROFILE SCREEN
+
+---
+
+Create/complete the Customer Profile screen opened from the existing fifth bottom tab:
+
+"Profile / الحساب"
+
+Professional native mobile UI.
+
+The screen should include, when supported by existing API data:
+
+* Customer full name.
+* Phone number.
+* Email if available.
+* Customer/account information available from the real API.
+* Profile avatar/initials using existing data only.
+* Account status if the API exposes it.
+
+Use real authenticated user data.
+
+Do not invent fields.
+
+---
+
+2. ACCOUNT SECTIONS
+
+---
+
+Create a clean professional structure such as:
+
+Account
+
+* Personal information
+* Edit profile (ONLY if production API supports it)
+
+Preferences
+
+* Language
+* Theme
+
+Activity
+
+* Orders
+* Notifications
+* Complaints
+
+Other
+
+* About SmartMall
+* Logout
+
+IMPORTANT:
+Only include actions/routes that actually exist in the mobile app or are supported by the existing production API.
+
+Do not create fake screens just to fill the UI.
+
+---
+
+3. EDIT PROFILE
+
+---
+
+ONLY implement this if the production API already supports customer profile updates.
+
+If supported:
+
+* Create a professional edit profile screen.
+* Pre-fill existing values.
+* Validate inputs.
+* Arabic/English validation messages.
+* Loading state.
+* Server error state.
+* Success feedback.
+* Update the authenticated user cache after successful update.
+* Keep the session/token intact.
+
+If the production API does NOT support profile editing:
+
+* Do NOT modify backend.
+* Do NOT fake the update.
+* Show the profile as read-only.
+* Report this limitation clearly.
+
+---
+
+4. LANGUAGE
+
+---
+
+Connect the existing language setting to the profile/preferences area.
+
+Supported:
+
+* Arabic
+* English
+
+Changing language must:
+
+* Update the mobile UI.
+* Correctly switch RTL/LTR.
+* Preserve existing navigation.
+* Preserve the existing authentication session.
+* Not break Home, Notifications, Orders, Checkout, or Scanner.
+
+Use the existing i18n implementation.
+
+Do NOT introduce a second language system.
+
+---
+
+5. THEME
+
+---
+
+Connect the existing theme behavior to Profile.
+
+Support:
+
+* Light
+* Dark
+
+If the existing app already has a theme system, reuse it.
+
+Do not create a duplicate theme provider.
+
+Theme changes must apply consistently to the Profile screen and existing screens.
+
+---
+
+6. NAVIGATION SHORTCUTS
+
+---
+
+From Profile:
+
+Orders → existing Orders screen.
+
+Notifications → existing Notifications screen.
+
+Complaints → existing Complaints screen ONLY if that route already exists.
+
+Do not create duplicate screens.
+
+Keep the existing five bottom tabs exactly:
+
+1. Home
+2. Malls
+3. Offers
+4. Orders
+5. Profile
+
+Do not add Search or Notifications to Bottom Navigation.
+
+---
+
+7. LOGOUT
+
+---
+
+Use the existing authentication/logout architecture.
+
+Logout must:
+
+* Clear the authenticated session/token using the existing secure mechanism.
+* Clear appropriate authenticated React Query/cache state.
+* Return the user to the login screen.
+* Never expose or log the token.
+* Never store tokens in AsyncStorage.
+
+Do NOT invent a logout API endpoint.
+
+If the current app performs local logout without a server endpoint, preserve that behavior.
+
+---
+
+8. PROFILE UI QUALITY
+
+---
+
+Make the screen look like a professional production mobile application.
+
+Requirements:
+
+* Safe area.
+* Proper spacing.
+* Clear section hierarchy.
+* Consistent cards/list rows.
+* Appropriate icons.
+* Proper touch targets.
+* Loading skeleton or polished loading state.
+* Error + retry.
+* Empty/fallback states where appropriate.
+* No excessive visual decoration.
+* Responsive on small and large phones.
+
+Do not redesign the rest of the application.
+
+---
+
+9. RTL / LTR
+
+---
+
+This is critical.
+
+Arabic:
+
+* true RTL.
+* text aligned right.
+* logical padding using `paddingStart` / `paddingEnd`.
+* icons and arrows logically positioned.
+* section rows follow RTL.
+* no hardcoded left/right where avoidable.
+
+English:
+
+* true LTR.
+* text aligned left.
+* normal directional icons/arrows.
+
+IMPORTANT:
+
+* Do NOT use `row-reverse`.
+* Avoid double inversion with I18nManager.
+* Follow the same RTL architecture established during Phase 4.
+
+---
+
+10. ACCESSIBILITY
+
+---
+
+Use appropriate:
+
+* accessibility labels.
+* accessible buttons.
+* sufficient touch targets.
+* clear interactive states.
+
+Do not over-engineer.
+
+---
+
+11. PERFORMANCE
+
+---
+
+* Reuse the existing authenticated user query/cache.
+* Do not request the same profile data unnecessarily.
+* Invalidate/update only relevant React Query caches.
+* Avoid unnecessary re-renders.
+* Cancel requests where appropriate.
+
+---
+
+12. SECURITY
+
+---
+
+* Never log authentication tokens.
+* Never put tokens in URLs.
+* Never persist tokens in AsyncStorage.
+* Preserve the existing SecureStore/session architecture.
+* Do not weaken authentication behavior.
+
+---
+
+13. SCOPE PROTECTION
+
+---
+
+DO NOT modify:
+
+* Laravel/backend
+* Hostinger
+* production website
+* Checkout
+* Orders logic
+* Cart logic
+* QR Scanner
+* Notifications implementation
+* Home design
+* Bottom navigation structure
+
+Only make minimal wiring changes if required to connect Profile to already-existing functionality.
+
+---
+
+14. VALIDATION
+
+---
+
+After implementation run:
+
+* TypeScript validation
+* Lint
+* Expo Doctor
+* Android production bundle
+* iOS production bundle
+* `git diff --check`
+
+Also verify:
+
+* No changes outside `artifacts/smartmall-mobile`
+* No backend changes
+* No Hostinger changes
+* No Checkout changes
+* No Orders logic changes
+* No Cart changes
+* No QR Scanner changes
+* No Notifications changes except required navigation/cache integration
+* No `row-reverse`
+* No new Router Slot warnings
+* No unnecessary dependencies
+
+---
+
+15. FINAL REPORT
+
+---
+
+At the end provide:
+
+1. Files changed.
+2. Existing production API endpoints inspected.
+3. Profile features implemented.
+4. Whether profile editing is supported by production.
+5. Logout behavior used.
+6. Language/theme integration.
+7. Validation results.
+8. Any production API limitations.
+9. Manual Android Expo Go test checklist.
+
+IMPORTANT:
+Do NOT proceed to Phase 5 Step 3.
+
+Stop after completing this task and wait for manual testing.

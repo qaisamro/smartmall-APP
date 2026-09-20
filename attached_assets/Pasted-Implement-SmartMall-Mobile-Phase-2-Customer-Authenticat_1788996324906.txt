@@ -1,0 +1,663 @@
+Implement **SmartMall Mobile — Phase 2: Customer Authentication + Basic Browsing**.
+
+## OBJECTIVE
+
+Continue from the completed Phase 1 Expo foundation.
+
+Build only the customer-facing authentication and basic browsing experience in the independent `/mobile` Expo app.
+
+The existing SmartMall website, Laravel backend, database, migrations, seeders, and Capacitor applications are production systems and MUST remain untouched unless a backend change is absolutely required and explicitly reported first.
+
+Do NOT start Phase 3 or implement unrelated features.
+
+---
+
+# 1. PROTECTED EXISTING PROJECT
+
+DO NOT modify:
+
+* `/frontend`
+* `/backend`
+* existing Laravel migrations
+* database schema
+* existing Capacitor Android/iOS code
+* existing production website behavior
+* existing web authentication implementation
+
+The only intended application area for this task is:
+
+`/mobile`
+
+If the current multi-app structure requires configuration changes outside `/mobile`, stop and report them before modifying them.
+
+---
+
+# 2. TECHNOLOGY
+
+Use the Phase 1 foundation already created.
+
+Continue using:
+
+* React Native
+* Expo
+* TypeScript strict
+* Expo Router
+* TanStack React Query
+* Zustand
+* Axios
+* Expo SecureStore
+* React Hook Form
+* Zod
+* i18next
+* RTL support
+
+Do not replace the architecture with another framework.
+
+Do not introduce unnecessary dependencies.
+
+---
+
+# 3. API
+
+Use the existing SmartMall API:
+
+Production base URL:
+
+`https://samrtmall.cloud/api/v1`
+
+The mobile application must use the centralized environment/API configuration already established in Phase 1.
+
+DO NOT hardcode the production URL throughout the application.
+
+The API client must remain centralized.
+
+Relevant existing endpoints:
+
+### Authentication
+
+POST `/login`
+
+POST `/register`
+
+POST `/logout`
+
+GET `/me`
+
+POST `/forgot-password`
+
+POST `/reset-password`
+
+### Customer/catalog
+
+GET `/malls`
+
+GET `/malls/slug/{slug}`
+
+GET `/malls/{id}`
+
+GET `/malls/{id}/products`
+
+GET `/malls/{id}/sections`
+
+GET `/products`
+
+GET `/products/{id}`
+
+GET `/categories`
+
+GET `/sections`
+
+GET `/offers`
+
+GET `/home-widgets`
+
+GET `/popups/active`
+
+GET `/public-stats`
+
+GET `/search`
+
+GET `/search/global`
+
+---
+
+# 4. AUTHENTICATION
+
+Implement a professional customer authentication flow.
+
+## Login
+
+Create:
+
+`/mobile/app/(auth)/login.tsx`
+
+Use:
+
+* React Hook Form
+* Zod validation
+* reusable form components
+* loading state
+* server error state
+* validation errors
+* keyboard-safe layout
+* Arabic and English translations
+
+Login request:
+
+POST `/login`
+
+Expected authentication response contains:
+
+* `user`
+* `access_token`
+* `token_type`
+
+Store ONLY the access token securely using Expo SecureStore.
+
+NEVER store the bearer token in:
+
+* AsyncStorage
+* persisted Zustand
+* plain files
+* URL parameters
+* query strings
+
+Keep authentication state separate from sensitive token persistence.
+
+---
+
+# 5. AUTH STORE
+
+Use the existing Phase 1 auth architecture if available.
+
+The auth state should support:
+
+* user
+* isAuthenticated
+* isLoading
+* initialize()
+* login()
+* logout()
+* refreshUser()
+
+On application startup:
+
+1. Read the token from SecureStore.
+2. If no token exists, show the authentication flow.
+3. If a token exists, call GET `/me`.
+4. If `/me` succeeds, restore the user session.
+5. If `/me` returns 401, remove the invalid token and return to login.
+
+Do NOT assume a stored token is valid.
+
+---
+
+# 6. CENTRAL 401 HANDLING
+
+The centralized API client must handle HTTP 401 consistently.
+
+When an authenticated request receives 401:
+
+* clear the stored token
+* clear authenticated user state
+* navigate to the login flow
+* avoid infinite redirect loops
+
+Do not implement authentication logic separately inside every screen.
+
+---
+
+# 7. REGISTER
+
+Create:
+
+`/mobile/app/(auth)/register.tsx`
+
+Implement customer registration only.
+
+Use:
+
+* React Hook Form
+* Zod
+* proper validation
+* Arabic/English
+* loading/error/success states
+
+IMPORTANT:
+
+Do not expose or allow registration as:
+
+* admin
+* mall-owner
+* supermarket-owner
+* delivery-person
+* order-tracker
+* cashier
+
+Registration must remain a normal customer registration flow.
+
+Use only fields supported by the existing API. Do not invent backend fields.
+
+---
+
+# 8. FORGOT / RESET PASSWORD
+
+Create:
+
+`forgot-password.tsx`
+
+and:
+
+`reset-password.tsx`
+
+Use the existing API endpoints.
+
+Do not implement a new backend password-reset mechanism.
+
+If the current API contract requires a specific reset token/field structure, inspect the existing Laravel implementation before making assumptions.
+
+---
+
+# 9. AUTH ROUTING
+
+Use Expo Router route groups:
+
+`(auth)`
+
+`(customer)`
+
+Unauthenticated users must not access protected customer screens.
+
+Authenticated users should not unnecessarily remain on login/register screens.
+
+Create a clean authentication gate at the router/layout level.
+
+Avoid navigation hacks scattered across individual screens.
+
+---
+
+# 10. CUSTOMER HOME
+
+After authentication, create the first professional customer home screen.
+
+Suggested route:
+
+`/mobile/app/(customer)/(tabs)/index.tsx`
+
+The home screen should consume the existing APIs.
+
+Use the available data where appropriate:
+
+* malls
+* home widgets
+* offers
+* sections
+* public stats
+* active popups
+
+Do NOT invent backend functionality.
+
+The initial home screen should be lightweight and mobile-first.
+
+Use reusable components rather than putting everything inside one screen.
+
+---
+
+# 11. MALLS
+
+Create:
+
+`/mobile/app/(customer)/(tabs)/malls.tsx`
+
+Display malls from:
+
+GET `/malls`
+
+Include:
+
+* loading state
+* skeleton/loading UI
+* empty state
+* error state
+* retry
+* pull-to-refresh if appropriate
+
+Selecting a mall should open:
+
+`/mobile/app/(customer)/mall/[slug].tsx`
+
+Use the existing mall slug endpoint.
+
+---
+
+# 12. PRODUCTS
+
+Inside the mall experience, implement basic product browsing.
+
+Use:
+
+GET `/malls/{id}/products`
+
+Support the API's existing:
+
+* category filtering
+* search
+* sections
+
+Respect pagination.
+
+DO NOT request:
+
+`all=true`
+
+Do not load the entire product catalog into memory.
+
+Use TanStack Query and proper caching.
+
+Prepare the architecture for infinite/paginated loading.
+
+---
+
+# 13. PRODUCT DETAILS
+
+Create:
+
+`/mobile/app/(customer)/product/[id].tsx`
+
+Use:
+
+GET `/products/{id}`
+
+Display the product information available from the API.
+
+Create a reusable product card component.
+
+Images must use the centralized image URL utility created during Phase 1.
+
+Do not duplicate image URL normalization logic.
+
+---
+
+# 14. SEARCH
+
+Implement basic customer search.
+
+Use the existing search API.
+
+Important:
+
+* debounce user input
+* do not send requests for empty/very short input
+* cancel obsolete requests when possible
+* show loading state
+* show empty results
+* show errors
+* avoid unbounded client-side fetching
+
+Do not create a new backend search endpoint.
+
+---
+
+# 15. NAVIGATION
+
+Create a professional customer navigation structure.
+
+Initial tabs can include:
+
+* Home
+* Malls
+* Offers
+* Orders
+* Profile
+
+However, for this Phase 2:
+
+### Implement fully only:
+
+* Home
+* Malls
+
+For the remaining tabs:
+
+* create clean placeholder screens only if required by the navigation architecture
+* clearly mark them as coming in later phases
+* DO NOT implement order/cart/notification functionality yet
+
+Profile may contain only a minimal authenticated user view and logout if needed.
+
+---
+
+# 16. UI / UX
+
+The application must feel like a native mobile application, NOT a website inside a phone.
+
+Use:
+
+* safe areas
+* proper mobile spacing
+* accessible touch targets
+* keyboard handling
+* native navigation
+* responsive layouts
+* reusable buttons
+* reusable inputs
+* reusable cards
+* loading skeletons
+* empty states
+* error states
+
+Support:
+
+### Arabic
+
+RTL
+
+### English
+
+LTR
+
+The language system must be ready for future screens.
+
+Do not hardcode user-facing strings where translations should be used.
+
+---
+
+# 17. DARK / LIGHT MODE
+
+Use the Phase 1 theme foundation.
+
+Authentication and browsing screens must respect:
+
+* light mode
+* dark mode
+
+Do not create a completely separate styling system.
+
+---
+
+# 18. PERFORMANCE
+
+This application must be designed for a large SmartMall catalog.
+
+Avoid:
+
+* loading thousands of products at once
+* unnecessary rerenders
+* duplicate API calls
+* unbounded arrays
+* duplicated server state in Zustand
+
+Use:
+
+* TanStack Query for server state
+* Zustand only for client state
+* memoization where useful
+* pagination/infinite queries
+* image optimization/loading states
+
+Do not introduce FlashList unless the current product-list implementation actually needs it; if it is already part of Phase 1 dependencies, it may be used.
+
+---
+
+# 19. ERROR HANDLING
+
+Create consistent user-friendly errors.
+
+Examples:
+
+* Network unavailable
+* Invalid credentials
+* Session expired
+* Server unavailable
+* Empty results
+* Validation failure
+
+Do not expose raw Axios errors or internal server messages directly to users.
+
+Use the centralized error infrastructure from Phase 1.
+
+---
+
+# 20. SECURITY
+
+Never:
+
+* expose Laravel secrets
+* expose database credentials
+* expose Firebase private credentials
+* expose OAuth client secrets
+* store bearer tokens in plain storage
+* put tokens in URLs
+* create insecure authentication shortcuts
+
+Only public mobile configuration may exist in the mobile environment.
+
+---
+
+# 21. IMPORTANT SCOPE LIMIT
+
+DO NOT IMPLEMENT:
+
+* Cart
+* Checkout
+* Orders
+* Order tracking
+* Barcode scanner
+* QR scanner
+* Push notifications
+* Complaints
+* Delivery features
+* Owner dashboard
+* Admin dashboard
+* Payment integration
+* WhatsApp order integration
+* Google native OAuth
+* Capacitor changes
+* backend migrations
+* database changes
+
+These belong to later phases.
+
+---
+
+# 22. FILE / ARCHITECTURE QUALITY
+
+Keep the architecture feature-oriented.
+
+Prefer:
+
+`features/auth`
+
+`features/malls`
+
+`features/catalog`
+
+`features/search`
+
+with:
+
+* API functions
+* hooks
+* schemas/types
+* reusable UI
+
+Screens should not contain raw Axios calls.
+
+Do not duplicate API logic between screens.
+
+---
+
+# 23. VALIDATION
+
+Before finishing:
+
+Run all appropriate checks available in the project:
+
+* TypeScript
+* Expo configuration validation
+* ESLint
+* route validation
+* production/startup build where supported
+
+Verify:
+
+1. `/mobile` starts successfully.
+2. Login screen renders.
+3. Register screen renders.
+4. Authentication routing works.
+5. SecureStore token persistence works.
+6. `/me` session restoration works.
+7. 401 handling works.
+8. Home renders.
+9. Malls render.
+10. Mall selection works.
+11. Products load with pagination.
+12. Product details render.
+13. Search works.
+14. Arabic RTL works.
+15. English LTR works.
+16. Light/dark mode works.
+
+---
+
+# 24. FINAL SAFETY CHECK
+
+Before completing the task, verify that no files outside `/mobile` were modified except any previously approved multi-app workspace configuration required by Phase 1.
+
+Do NOT silently modify the Laravel backend.
+
+Do NOT silently modify the existing website.
+
+Do NOT modify Capacitor.
+
+If a backend change appears necessary, STOP and report exactly what is required instead of changing it.
+
+---
+
+# 25. STOP CONDITION
+
+This is **PHASE 2 ONLY**.
+
+When all Phase 2 work and checks pass:
+
+STOP.
+
+Do not automatically continue to:
+
+* Cart
+* Checkout
+* Orders
+* Scanner
+* Notifications
+
+Report:
+
+* files created/changed
+* authentication implementation
+* API endpoints used
+* tests/checks performed
+* any limitations
+* any backend changes required (preferably none)
+* confirmation that existing website/backend/Capacitor were preserved
+
+Then wait for approval for the next phase.

@@ -1,0 +1,215 @@
+## الخطوة التالية: اختبار RTL عبر Expo Development Build
+
+لدينا الآن دليل runtime واضح:
+
+```text
+language = ar
+expectedRTL = true
+I18nManager.isRTL = false
+UI = LTR
+```
+
+وتم بالفعل تطبيق الإصلاح المركزي في:
+
+* `src/i18n/index.ts`
+* `app/_layout.tsx`
+* Auth layout
+* Customer layout
+* Tabs layout
+
+كما تم تمرير direction إلى Root/Stack/Tabs بدون `row-reverse hacks`.
+
+لذلك **لا تضف أي RTL fixes جديدة إلى الشاشات**.
+
+### المطلوب الآن
+
+أريد تجهيز المشروع لاختبار `I18nManager.forceRTL()` باستخدام:
+
+**Expo Development Build**
+
+بدل Expo Go.
+
+---
+
+### 1. افحص المشروع أولًا
+
+تحقق من:
+
+* Expo SDK الحالي
+* Expo Router
+* app.json / app.config.*
+* eas.json
+* Android configuration
+* هل يوجد Development Build configuration حاليًا؟
+
+لا تغيّر أي شيء غير ضروري.
+
+---
+
+### 2. إذا كان Development Build يحتاج dependency
+
+إذا كان يلزم `expo-dev-client` أو أي dependency Native:
+
+لا تضفها بشكل عشوائي.
+
+اذكر أولًا:
+
+```text
+Dependency required:
+<name>
+Reason:
+<why it is required>
+```
+
+ثم استخدم الطريقة الرسمية المتوافقة مع Expo SDK الحالي.
+
+لا تقم بترقية Expo SDK أو React Native.
+
+---
+
+### 3. أنشئ Development Profile فقط
+
+إذا كان `eas.json` يحتاج تعديلًا، أضف profile خاصًا بالتطوير فقط.
+
+مثال المفهوم المطلوب:
+
+```text
+development
+```
+
+ولا تغيّر:
+
+* production profile
+* API
+* backend
+* website
+* production build behavior
+
+---
+
+### 4. API
+
+يجب أن يستمر التطبيق باستخدام:
+
+```text
+https://samrtmall.cloud/api/v1
+```
+
+لا تغيّر endpoint.
+
+---
+
+### 5. لا تغيّر RTL architecture الحالية
+
+احتفظ بكل الإصلاحات الموجودة:
+
+```text
+I18nManager
+forceRTL
+language persistence
+reload guard
+root direction
+stack direction
+tab direction
+web document.dir
+```
+
+لا تضف:
+
+```text
+row-reverse
+```
+
+ولا تعدّل الشاشات الفردية.
+
+---
+
+### 6. Build
+
+جهّز Development Build Android مناسبًا للاختبار.
+
+لا أحتاج الآن iOS build جديدًا إلا إذا كان إعداد المشروع يتطلبه.
+
+بعد اكتمال الإعداد، أعطني:
+
+* الأمر المستخدم لبناء Development Build
+* profile المستخدم
+* الملفات التي تغيرت
+* dependencies التي تغيرت، إن وجدت
+* هل تم إنشاء Android development build بنجاح؟
+
+---
+
+### 7. لا تدّعي أن RTL أصبح Fixed
+
+حتى بعد نجاح الـbuild:
+
+```text
+RTL runtime verification = NOT YET VERIFIED
+```
+
+إلى أن أختبره فعليًا على Android.
+
+---
+
+### 8. بعد تشغيل Development Build
+
+أريد أن يظهر debug:
+
+```text
+[RTL DEBUG]
+platform: android
+language: ar
+isRTL: true
+expectedRTL: true
+```
+
+عند العربية.
+
+وعند English:
+
+```text
+[RTL DEBUG]
+platform: android
+language: en
+isRTL: false
+expectedRTL: false
+```
+
+ثم نتحقق بصريًا من الـUI.
+
+---
+
+### 9. مهم
+
+لا تبدأ أي Feature جديدة.
+
+لا تغيّر:
+
+* API
+* Laravel
+* Authentication
+* Cart
+* Orders
+* Search
+* Malls
+* Notifications
+* Profile
+
+المهمة الحالية فقط:
+
+**تجهيز Development Build لاختبار Native RTL الحقيقي على Android.**
+
+في التقرير النهائي استخدم إحدى الحالات:
+
+```text
+Development Build prepared — RTL runtime test pending
+```
+
+أو إذا واجهت مشكلة:
+
+```text
+Development Build blocked
+```
+
+مع ذكر السبب بالتحديد.

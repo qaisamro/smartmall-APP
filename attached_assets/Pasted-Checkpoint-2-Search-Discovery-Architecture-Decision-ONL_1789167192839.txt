@@ -1,0 +1,122 @@
+Checkpoint 2 — Search & Discovery Architecture Decision ONLY
+
+Do NOT write code.
+Do NOT modify any files.
+Do NOT install or change dependencies.
+Do NOT run implementation changes.
+
+Based strictly on the completed Search & Discovery inspection, make the final architecture decision for Phase 5 Step 3.
+
+Requirements:
+
+1. Global Search
+- Keep the confirmed production endpoint:
+  GET /api/v1/search/global?query=
+- Minimum 2 characters.
+- Keep 500ms debounce.
+- Keep AbortSignal/request cancellation.
+- Keep the existing grouped-by-mall response model.
+- Do NOT invent pagination because production caps global results at 30.
+- Improve UX only where justified:
+  - clear button
+  - loading state
+  - empty state
+  - error/retry
+  - grouped mall results
+  - product navigation
+  - Arabic/English
+  - RTL/LTR
+  - keyboard behavior
+- Do not change the existing Home search-bar navigation flow.
+
+2. Malls tab
+Decide whether the Malls tab should receive a search field using the confirmed:
+  GET /api/v1/malls?search=&type=
+
+If yes:
+- Preserve existing All / Mall / Supermarket filtering.
+- Keep the current bottom navigation exactly:
+  Home / Malls / Offers / Orders / Profile
+- Do NOT add Search as a bottom tab.
+- Do NOT implement nearby-radius search because the production backend currently ignores lat/lng/radius.
+- Preserve the existing mall cards and navigation.
+
+3. Mall Details
+- Preserve the already-working mall product search.
+- Preserve category filtering, section filtering, infinite pagination, and product navigation.
+- Do not rewrite the catalog architecture.
+- Only allow focused UX improvements if clearly justified.
+
+4. Existing extra malls request
+Evaluate the current global Search screen's extra useMalls() request used to resolve localized mall names.
+Decide whether it can be safely removed/replaced without changing the production API contract or causing incorrect Arabic/English mall names.
+
+5. Query/cache architecture
+Confirm exact React Query keys and cache strategy for:
+- global search
+- mall search
+- mall products
+- mall sections
+
+Avoid duplicate requests and unnecessary refetches.
+
+6. Performance
+Preserve:
+- debounce
+- AbortSignal
+- appropriate staleTime
+- React Query caching
+- existing FlatList/FlashList approach
+- no new dependencies unless absolutely necessary
+
+7. History / Suggestions
+Explicitly decide whether Search History, Recent Searches, Trending Searches, or Suggestions are:
+- included in this step, or
+- deferred.
+
+Do not create a fake backend API for these features.
+If included, they must be client-only and simple.
+
+8. API safety
+Use ONLY confirmed production endpoints.
+Do NOT use the legacy:
+  GET /api/v1/search
+unless there is a demonstrated requirement.
+Do NOT modify Laravel/backend/Hostinger.
+
+9. RTL / i18n
+Reuse the existing i18n and direction architecture.
+Do NOT use row-reverse hacks.
+Ensure Arabic titles/alignment are naturally RTL.
+
+10. Scope
+The implementation should remain limited to:
+artifacts/smartmall-mobile
+
+Absolutely no changes to:
+- Laravel/backend
+- production website
+- Hostinger
+- Checkout
+- Orders
+- Cart
+- Scanner/QR
+- Notifications
+- Profile/Auth
+- Bottom navigation structure
+unless explicitly required by the final architecture decision.
+
+Return ONLY the architecture decision, including:
+
+A. Final features included
+B. Features explicitly deferred
+C. Confirmed production endpoints
+D. Exact files expected to change
+E. React Query keys/cache strategy
+F. Performance strategy
+G. RTL/i18n strategy
+H. Navigation behavior
+I. Risks/limitations
+J. Exact implementation scope
+
+Then STOP.

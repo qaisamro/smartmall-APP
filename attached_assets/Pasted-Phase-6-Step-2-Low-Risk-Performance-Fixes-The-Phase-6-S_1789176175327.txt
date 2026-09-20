@@ -1,0 +1,275 @@
+Phase 6 — Step 2: Low-Risk Performance Fixes
+
+The Phase 6 Step 1 Performance Audit is complete.
+
+Implement ONLY the following low-risk improvements.
+
+IMPORTANT:
+
+* Inspect the existing implementation before editing.
+* Do NOT modify Laravel/backend.
+* Do NOT modify the existing website.
+* Do NOT change API contracts.
+* Do NOT add dependencies.
+* Do NOT modify the RTL architecture.
+* Do NOT modify I18nManager behavior.
+* Do NOT modify navigation structure.
+* Do NOT change the bottom tab order.
+* Do NOT redesign UI.
+* Do NOT refactor unrelated code.
+* Do NOT implement Phase 6 Step 3 or Step 4.
+* Preserve all existing production behavior.
+
+Project:
+`artifacts/smartmall-mobile`
+
+API:
+`https://samrtmall.cloud/api/v1`
+
+---
+
+# Step 1 — Orders cache invalidation
+
+After a successful Checkout confirmation, invalidate/refetch the existing `customer-orders` React Query cache.
+
+Do the same after successful QR order confirmation.
+
+Requirements:
+
+* Preserve the current checkout flow:
+  `/orders/pending`
+  then
+  `/orders/pending/{id}/confirm`
+* Do not change the API.
+* Do not change order creation logic.
+* Do not change navigation behavior.
+* Do not clear unrelated caches.
+* Only invalidate/refetch the relevant customer orders query.
+
+---
+
+# Step 2 — AbortSignal for Malls/Catalog requests
+
+Extend the existing API functions only where needed so they accept:
+
+`signal?: AbortSignal`
+
+Pass the signal through Axios correctly.
+
+Apply this to the existing Malls/Catalog requests identified in the audit.
+
+Requirements:
+
+* Preserve the current 500ms search debounce.
+* Preserve pagination.
+* Preserve infinite queries.
+* Preserve filters.
+* Do not change endpoint URLs.
+* Do not show cancellation errors to the user.
+* Do not introduce a new networking library.
+
+The purpose is only to cancel obsolete requests when React Query/navigation no longer needs them.
+
+---
+
+# Step 3 — Prevent duplicate QR scanner requests
+
+Inspect:
+
+`app/(customer)/scanner.tsx`
+
+Add a safe in-flight guard using a `useRef` or equivalent.
+
+Requirements:
+
+* A barcode must not trigger multiple simultaneous scan/confirm requests.
+* The guard must be set BEFORE the asynchronous request starts.
+* It must always be released in `finally`.
+* Preserve the existing successful scan flow.
+* Preserve the current backend confirmation endpoint.
+* Do not change camera permissions.
+* Do not redesign the scanner UI.
+* Do not implement full camera lifecycle/AppState changes yet.
+
+Important:
+Do not use a simple state-only guard if it can still allow multiple callbacks before React re-renders.
+
+---
+
+# Step 4 — Avoid repeated imageUrl calculation
+
+Inspect the locations identified by the audit:
+
+* `app/(customer)/mall/[slug].tsx`
+* `app/(customer)/(tabs)/search.tsx`
+* `app/(customer)/product/[id].tsx`
+* `app/(customer)/order/[id].tsx`
+
+Where the same image URL transformation is calculated repeatedly during one render, calculate it once per row/item/detail.
+
+Requirements:
+
+* Preserve the exact resulting URL.
+* Do not change image sources.
+* Do not change backend image behavior.
+* Do not introduce unnecessary memoization.
+* Only optimize clearly repeated calculations.
+
+---
+
+# Step 5 — Notifications invalidation
+
+Inspect:
+
+`src/features/notifications/useNotificationsHooks.ts`
+
+Prevent unnecessary duplicate refetch/invalidation caused by updating the notification list and unread counter independently.
+
+Requirements:
+
+* Preserve the existing optimistic update.
+* Preserve rollback behavior.
+* Preserve unread count correctness.
+* Do not change the notification API.
+* Do not redesign the notifications screen.
+* Do not implement FlatList/Pagination yet.
+
+Only consolidate redundant query invalidation/refetch behavior where it is clearly safe.
+
+---
+
+# Step 6 — Startup/network timing instrumentation ONLY
+
+Measure the current startup sequence without changing its behavior.
+
+Measure/log, in development only:
+
+1. App/layout initialization
+2. i18n initialization
+3. SecureStore/auth restoration
+4. `/me` request
+5. First authenticated/navigation-ready state
+
+Use timestamps/duration measurements.
+
+Requirements:
+
+* Development/debug logging only.
+* No production UI changes.
+* Do not add analytics.
+* Do not add dependencies.
+* Do not change timeout values.
+* Do not add startup fallback yet.
+* Do not modify RTL reload behavior.
+* Do not modify navigation.
+
+The purpose is to establish a baseline before Phase 6 Step 4 startup optimization.
+
+---
+
+# Critical RTL Protection
+
+RTL has already been fixed and manually verified on a real Android device.
+
+DO NOT modify:
+
+* `I18nManager`
+* `forceRTL`
+* language persistence
+* reload guard
+* root direction
+* stack direction
+* tab direction
+* Arabic/English direction logic
+
+After implementation, explicitly verify that these files have not been changed unless absolutely required:
+
+* `src/i18n/index.ts`
+* `app/_layout.tsx`
+* `app/(auth)/_layout.tsx`
+* `app/(customer)/_layout.tsx`
+* `app/(customer)/(tabs)/_layout.tsx`
+
+If any RTL-related file must change, STOP and report why before proceeding.
+
+---
+
+# Validation
+
+After implementation run:
+
+1. TypeScript/typecheck
+2. ESLint if available
+3. Android export
+4. Expo configuration validation
+5. `git diff --check`
+6. Search for unintended `row-reverse`
+7. Verify no backend files changed
+8. Verify no website files changed
+9. Verify no dependency changes
+10. Review complete git diff
+
+Also verify:
+
+* Home still works
+* Malls still works
+* Search still works
+* Mall Details still works
+* Product Details still works
+* Cart still works
+* Checkout flow unchanged
+* Orders refresh after successful checkout
+* QR scan does not duplicate requests
+* Notifications still update correctly
+* Arabic RTL architecture remains untouched
+* English LTR remains untouched
+
+Do NOT claim manual device verification unless actually performed.
+
+## Required final report
+
+Return:
+
+### Files changed
+
+List exact files.
+
+### Changes made
+
+Short explanation for each.
+
+### Validation
+
+Report each validation result.
+
+### Performance impact
+
+Explain what should improve and why.
+
+### Risk
+
+Identify any remaining risk.
+
+### Backend changes
+
+Must state explicitly:
+
+`Backend changes: NONE`
+
+### Dependencies
+
+Must state explicitly:
+
+`Dependency changes: NONE`
+
+### RTL
+
+Must state explicitly:
+
+`RTL architecture unchanged.`
+
+At the very end:
+
+`PHASE 6 STEP 2 COMPLETE — LOW-RISK PERFORMANCE FIXES ONLY`
+
+Do NOT continue to Step 3 automatically.
