@@ -14,3 +14,4 @@
 - [Expo Apple Authentication](expo-apple-authentication-install.md) — Expo 57 uses the published 57.0.2 package; install it in the mobile workspace, not the monorepo root.
 - [Server-side WhatsApp verification](whatsapp-verification.md) — mobile carries only an opaque challenge and one-time proof; Laravel owns code generation, delivery, expiry, attempts, and consumption.
 - [Mobile numeric display](mobile-numeric-display.md) — keep Arabic/RTL text while normalizing every displayed number to Western digits only.
+- [GitHub API repository upload](github-api-upload.md) — an empty GitHub repository needs a seed Contents commit before Git database blobs can be created through the connector.
